@@ -50,7 +50,13 @@ const questoesHard = [
   },
 ];
 
-function Icon({ children, className = "" }) {
+function Icon({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden="true"
