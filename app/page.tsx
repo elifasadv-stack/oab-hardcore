@@ -33,10 +33,9 @@ type CorrecaoPeca = {
   tipo: TipoPeca;
   nota: number;
   maximo: number;
+  incompatibilidade: boolean;
+  mensagemIncompatibilidade?: string;
   itens: CorrecaoItem[];
-  pontosFortes: string[];
-  pontosFracos: string[];
-  planoMelhoria: string[];
 };
 
 type ResultadoFinal = {
@@ -70,6 +69,79 @@ const tiposPeca: TipoPeca[] = [
   "Embargos à Execução Fiscal",
   "Ação de Consignação em Pagamento",
 ];
+
+const assinaturasObrigatorias: Record<TipoPeca, string[]> = {
+  "Mandado de Segurança": [
+    "mandado de segurança",
+    "autoridade coatora",
+    "direito líquido",
+    "lei 12.016",
+    "120 dias",
+  ],
+  "Ação Anulatória": [
+    "ação anulatória",
+    "lançamento",
+    "art. 38",
+    "desconstituir",
+    "crédito tributário",
+  ],
+  "Repetição de Indébito": [
+    "repetição de indébito",
+    "pagamento indevido",
+    "art. 165",
+    "art. 168",
+    "restituição",
+  ],
+  "Embargos à Execução Fiscal": [
+    "embargos à execução fiscal",
+    "execução fiscal",
+    "garantia do juízo",
+    "30 dias",
+    "cda",
+  ],
+  "Ação de Consignação em Pagamento": [
+    "consignação em pagamento",
+    "art. 164",
+    "recusa",
+    "depósito",
+    "extinção do crédito",
+  ],
+};
+
+const marcadoresPecaErrada: Record<TipoPeca, string[]> = {
+  "Mandado de Segurança": [
+    "ação anulatória",
+    "repetição de indébito",
+    "embargos à execução fiscal",
+    "consignação em pagamento",
+  ],
+  "Ação Anulatória": [
+    "mandado de segurança",
+    "autoridade coatora",
+    "lei 12.016",
+    "embargos à execução fiscal",
+    "repetição de indébito",
+  ],
+  "Repetição de Indébito": [
+    "mandado de segurança",
+    "ação anulatória",
+    "embargos à execução fiscal",
+    "consignação em pagamento",
+  ],
+  "Embargos à Execução Fiscal": [
+    "mandado de segurança",
+    "autoridade coatora",
+    "lei 12.016",
+    "ação anulatória",
+    "repetição de indébito",
+  ],
+  "Ação de Consignação em Pagamento": [
+    "mandado de segurança",
+    "ação anulatória",
+    "repetição de indébito",
+    "embargos à execução fiscal",
+  ],
+};
 
 const criteriosMS: Criterio[] = [
   {
@@ -108,7 +180,7 @@ const criteriosMS: Criterio[] = [
     id: "cabimento",
     titulo: "Cabimento",
     pontos: 0.5,
-    palavras: ["direito líquido", "direito liquido", "prova pré-constituída", "prova pre-constituida", "lei 12.016"],
+    palavras: ["direito líquido", "direito liquido", "prova pré-constituída", "lei 12.016"],
     erro: "Cabimento do MS fraco.",
     melhoria: "Explique direito líquido e certo, prova documental e ato ilegal.",
   },
@@ -124,7 +196,7 @@ const criteriosMS: Criterio[] = [
     id: "tese",
     titulo: "Tese tributária principal",
     pontos: 0.9,
-    palavras: ["ctn", "constituição", "crfb", "lei complementar", "súmula", "sumula", "legalidade", "imunidade", "prescrição", "decadência"],
+    palavras: ["ctn", "constituição", "crfb", "lei complementar", "súmula", "sumula", "legalidade", "imunidade"],
     erro: "Tese tributária principal insuficiente.",
     melhoria: "Fundamente com CF, CTN, lei aplicável e súmulas.",
   },
@@ -181,11 +253,11 @@ const criteriosGenericos: Criterio[] = [
   },
   {
     id: "nome",
-    titulo: "Nome da peça",
-    pontos: 0.5,
+    titulo: "Nome correto da peça",
+    pontos: 0.8,
     palavras: ["ação", "acao", "embargos", "consignação", "consignacao", "repetição", "repeticao"],
     erro: "Nome da peça não identificado.",
-    melhoria: "Indique expressamente o nome da peça.",
+    melhoria: "Indique expressamente o nome da peça correta.",
   },
   {
     id: "cabimento",
@@ -198,7 +270,7 @@ const criteriosGenericos: Criterio[] = [
   {
     id: "tese",
     titulo: "Tese tributária",
-    pontos: 1.4,
+    pontos: 1.3,
     palavras: ["ctn", "constituição", "crfb", "legalidade", "imunidade", "prescrição", "decadência", "lançamento"],
     erro: "Tese tributária insuficiente.",
     melhoria: "Desenvolva a tese com fundamento legal completo.",
@@ -222,7 +294,7 @@ const criteriosGenericos: Criterio[] = [
   {
     id: "fechamento",
     titulo: "Fechamento",
-    pontos: 0.6,
+    pontos: 0.4,
     palavras: ["local", "data", "advogado", "oab"],
     erro: "Fechamento incompleto.",
     melhoria: "Finalize com local, data, advogado e OAB.",
@@ -264,39 +336,10 @@ const questoesSimulado: Questao[] = [
     artigos: ["art. 156", "art. 175", "art. 180", "ctn"],
     pontos: 1.25,
   },
-  {
-    id: 3,
-    titulo: "Questão 3 — Decadência e ITBI progressivo",
-    enunciado:
-      "Município cobra ITBI em 2025 por fato de 2018 e aplica alíquota progressiva pelo valor venal. Analise decadência e progressividade.",
-    espelho: [
-      "Prazo decadencial tributário é matéria de lei complementar nacional.",
-      "Regra geral de decadência é de cinco anos.",
-      "ITBI não admite alíquota progressiva com base no valor venal.",
-    ],
-    artigos: ["art. 146", "art. 173", "súmula 656", "sumula 656"],
-    pontos: 1.25,
-  },
-  {
-    id: 4,
-    titulo: "Questão 4 — Medida cautelar fiscal",
-    enunciado:
-      "Em cautelar fiscal, juiz concede liminar para bloquear bens. Qual recurso cabe contra a liminar e de quando conta o prazo para contestar?",
-    espelho: [
-      "Cabe agravo de instrumento contra a liminar.",
-      "O prazo de contestação conta da juntada do mandado de execução da cautelar.",
-      "Aplicação da Lei 8.397/1992.",
-    ],
-    artigos: ["agravo de instrumento", "art. 7", "art. 8", "lei 8.397"],
-    pontos: 1.25,
-  },
 ];
 
 function normalizar(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function contemAlguma(texto: string, palavras: string[]): boolean {
@@ -310,7 +353,50 @@ function scoreColor(score: number): string {
   return "text-red-600";
 }
 
+function detectarIncompatibilidade(tipo: TipoPeca, texto: string): string | null {
+  const obrigatorias = assinaturasObrigatorias[tipo];
+  const erradas = marcadoresPecaErrada[tipo];
+
+  const acertosObrigatorios = obrigatorias.filter((item) => contemAlguma(texto, [item]));
+  const encontrouPecaErrada = erradas.find((item) => contemAlguma(texto, [item]));
+
+  const percentual = acertosObrigatorios.length / obrigatorias.length;
+
+  if (encontrouPecaErrada && percentual < 0.6) {
+    return `Peça incompatível: você selecionou "${tipo}", mas o texto contém estrutura de outra peça, especialmente "${encontrouPecaErrada}".`;
+  }
+
+  if (percentual < 0.4) {
+    return `Peça incompatível ou muito incompleta para "${tipo}". Faltam elementos essenciais dessa peça.`;
+  }
+
+  return null;
+}
+
 function corrigirPeca(tipo: TipoPeca, texto: string): CorrecaoPeca {
+  const incompatibilidade = detectarIncompatibilidade(tipo, texto);
+
+  if (incompatibilidade) {
+    return {
+      tipo,
+      nota: 0.8,
+      maximo: 5,
+      incompatibilidade: true,
+      mensagemIncompatibilidade: incompatibilidade,
+      itens: [
+        {
+          titulo: "Adequação da peça",
+          pontos: 0,
+          maximo: 5,
+          acertou: false,
+          erro: "A peça escolhida não corresponde ao texto apresentado.",
+          melhoria:
+            "Volte ao cabimento. Cada peça exige estrutura própria. Peça errada na OAB pode zerar ou derrubar drasticamente a nota.",
+        },
+      ],
+    };
+  }
+
   const criterios = criteriosPorPeca[tipo];
 
   const itens: CorrecaoItem[] = criterios.map((criterio) => {
@@ -326,22 +412,14 @@ function corrigirPeca(tipo: TipoPeca, texto: string): CorrecaoPeca {
     };
   });
 
-  const nota = Number(
-    itens.reduce((total, item) => total + item.pontos, 0).toFixed(1)
-  );
+  const nota = Number(itens.reduce((total, item) => total + item.pontos, 0).toFixed(1));
 
   return {
     tipo,
     nota,
     maximo: 5,
+    incompatibilidade: false,
     itens,
-    pontosFortes: itens
-      .filter((item) => item.acertou)
-      .map((item) => `${item.titulo}: item encontrado.`),
-    pontosFracos: itens.filter((item) => !item.acertou).map((item) => item.erro),
-    planoMelhoria: itens
-      .filter((item) => !item.acertou)
-      .map((item) => item.melhoria),
   };
 }
 
@@ -357,10 +435,7 @@ function corrigirQuestao(questao: Questao, resposta: string): CorrecaoQuestao {
     else erros.push(item);
   });
 
-  const artigosEncontrados = questao.artigos.filter((artigo) =>
-    contemAlguma(resposta, [artigo])
-  );
-
+  const artigosEncontrados = questao.artigos.filter((artigo) => contemAlguma(resposta, [artigo]));
   const proporcaoEspelho = acertos.length / questao.espelho.length;
   const bonusArtigos = Math.min(0.25, artigosEncontrados.length * 0.08);
   const nota = Math.min(questao.pontos, questao.pontos * proporcaoEspelho + bonusArtigos);
@@ -387,57 +462,6 @@ function calcularResultadoFinal(notaPeca: number, notaQuestoes: number): Resulta
   };
 }
 
-const modeloMandadoSeguranca = `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA VARA DA FAZENDA PÚBLICA DA COMARCA DO MUNICÍPIO ALFA
-
-JOÃO..., nacionalidade..., estado civil..., CPF..., endereço..., por seu advogado..., com fundamento no art. 5º, LXIX, da Constituição Federal e na Lei 12.016/2009, impetra:
-
-MANDADO DE SEGURANÇA COM PEDIDO LIMINAR
-
-em face de ato praticado pelo SECRETÁRIO MUNICIPAL DE FINANÇAS, autoridade coatora.
-
-I — DOS FATOS
-
-O Impetrante sofreu ato ilegal consistente em cobrança tributária indevida e ameaça ao exercício de sua atividade.
-
-II — DO CABIMENTO E DA TEMPESTIVIDADE
-
-O Mandado de Segurança é cabível para proteger direito líquido e certo, comprovado por prova pré-constituída, contra ato ilegal de autoridade pública.
-
-A impetração é tempestiva, pois ocorre dentro do prazo de 120 dias, conforme art. 23 da Lei 12.016/2009.
-
-III — DO DIREITO LÍQUIDO E CERTO E DA TESE TRIBUTÁRIA
-
-A cobrança viola a Constituição Federal, o CTN e o princípio da legalidade tributária.
-
-IV — DA VEDAÇÃO À SANÇÃO POLÍTICA
-
-A autoridade não pode utilizar restrição ao exercício da atividade econômica como meio indireto de cobrança de tributo, conforme Súmulas 70, 323 e 547 do STF.
-
-V — DA LIMINAR
-
-Estão presentes o fumus boni iuris e o periculum in mora, razão pela qual deve ser concedida liminar.
-
-VI — DOS PEDIDOS
-
-Requer:
-a) concessão da liminar;
-b) notificação da autoridade coatora;
-c) ciência ao ente público interessado;
-d) oitiva do Ministério Público;
-e) concessão definitiva da segurança.
-
-VII — DO VALOR DA CAUSA
-
-Dá-se à causa o valor de R$...
-
-Termos em que,
-Pede deferimento.
-
-Local..., data...
-
-Advogado...
-OAB...`;
-
 export default function Home() {
   const [aba, setAba] = useState<Aba>("peca");
   const [tipoPeca, setTipoPeca] = useState<TipoPeca>("Mandado de Segurança");
@@ -463,16 +487,12 @@ export default function Home() {
     const resultadoQuestoes = questoesSimulado.map((questao) =>
       corrigirQuestao(questao, respostasQuestoes[questao.id] ?? "")
     );
-
     setCorrecoesQuestoes(resultadoQuestoes);
     setAba("correcao");
   }
 
   function atualizarRespostaQuestao(id: number, texto: string): void {
-    setRespostasQuestoes((atual) => ({
-      ...atual,
-      [id]: texto,
-    }));
+    setRespostasQuestoes((atual) => ({ ...atual, [id]: texto }));
   }
 
   return (
@@ -481,7 +501,7 @@ export default function Home() {
         <h1 className="text-4xl md:text-5xl font-black">Meta OAB: 8,0 ou mais</h1>
 
         <p className="mt-3 text-slate-600">
-          Peça vale 5,0. Questões valem 5,0. Nota final vale 10,0. O aluno só atinge a meta com 8,0 ou mais.
+          Peça vale 5,0. Questões valem 5,0. Nota final vale 10,0.
         </p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -504,13 +524,6 @@ export default function Home() {
             </p>
             <p className="text-xs">/10,0</p>
           </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl bg-slate-950 p-4 text-white">
-          <p className="font-bold">Status</p>
-          <p className={`mt-1 text-2xl font-black ${resultado.aprovado ? "text-emerald-400" : "text-red-300"}`}>
-            {resultado.aprovado ? "APROVADO NA META 8,0" : "AINDA NÃO ATINGIU A META 8,0"}
-          </p>
         </div>
 
         <div className="my-6 flex flex-wrap gap-3">
@@ -546,14 +559,6 @@ export default function Home() {
                 ))}
               </select>
 
-              <div className="mt-6 rounded-2xl bg-slate-100 p-4">
-                <p className="font-bold">Comando</p>
-                <p className="mt-2">
-                  Faça a peça completa com endereçamento, qualificação, nome da peça, cabimento,
-                  tempestividade, tese tributária, pedidos, valor da causa e fechamento.
-                </p>
-              </div>
-
               <textarea
                 value={textoPeca}
                 onChange={(event) => setTextoPeca(event.target.value)}
@@ -561,27 +566,13 @@ export default function Home() {
                 className="mt-6 h-[520px] w-full rounded-2xl border p-4"
               />
 
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button onClick={enviarPeca} className="rounded-2xl bg-black px-6 py-3 font-bold text-white">
-                  Enviar peça para correção
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTipoPeca("Mandado de Segurança");
-                    setTextoPeca(modeloMandadoSeguranca);
-                    setCorrecaoPeca(null);
-                  }}
-                  className="rounded-2xl bg-slate-200 px-6 py-3 font-bold"
-                >
-                  Inserir modelo MS
-                </button>
-              </div>
+              <button onClick={enviarPeca} className="mt-4 rounded-2xl bg-black px-6 py-3 font-bold text-white">
+                Enviar peça para correção
+              </button>
             </div>
 
             <div className="rounded-3xl border bg-white p-6">
               <h2 className="text-3xl font-black">Critérios desta peça</h2>
-
               <div className="mt-4 space-y-3">
                 {criteriosPorPeca[tipoPeca].map((criterio) => (
                   <div key={criterio.id} className="rounded-2xl bg-slate-100 p-4">
@@ -596,27 +587,19 @@ export default function Home() {
 
         {aba === "questoes" && (
           <section className="rounded-3xl border bg-white p-6">
-            <h2 className="text-3xl font-black">Questões Discursivas — Simulado FGV</h2>
+            <h2 className="text-3xl font-black">Questões Discursivas</h2>
 
-            <p className="mt-2 text-slate-600">
-              Responda as 4 questões. Cada uma vale 1,25. Total: 5,0 pontos.
-            </p>
-
-            <div className="mt-6 space-y-6">
-              {questoesSimulado.map((questao) => (
-                <div key={questao.id} className="rounded-3xl bg-slate-100 p-5">
-                  <h3 className="text-xl font-black">{questao.titulo}</h3>
-                  <p className="mt-2">{questao.enunciado}</p>
-
-                  <textarea
-                    value={respostasQuestoes[questao.id] ?? ""}
-                    onChange={(event) => atualizarRespostaQuestao(questao.id, event.target.value)}
-                    placeholder="Digite sua resposta fundamentada..."
-                    className="mt-4 h-40 w-full rounded-2xl border p-4"
-                  />
-                </div>
-              ))}
-            </div>
+            {questoesSimulado.map((questao) => (
+              <div key={questao.id} className="mt-6 rounded-3xl bg-slate-100 p-5">
+                <h3 className="text-xl font-black">{questao.titulo}</h3>
+                <p className="mt-2">{questao.enunciado}</p>
+                <textarea
+                  value={respostasQuestoes[questao.id] ?? ""}
+                  onChange={(event) => atualizarRespostaQuestao(questao.id, event.target.value)}
+                  className="mt-4 h-40 w-full rounded-2xl border p-4"
+                />
+              </div>
+            ))}
 
             <button onClick={corrigirTodasQuestoes} className="mt-6 rounded-2xl bg-black px-6 py-3 font-bold text-white">
               Corrigir questões
@@ -630,12 +613,15 @@ export default function Home() {
               <h2 className="text-3xl font-black">Correção da Peça</h2>
 
               {!correcaoPeca ? (
-                <p className="mt-4 text-slate-600">Envie uma peça para ver a correção individual.</p>
+                <p className="mt-4 text-slate-600">Envie uma peça para ver a correção.</p>
               ) : (
                 <div className="mt-4 space-y-4">
-                  <div className="rounded-2xl bg-slate-100 p-4">
+                  <div className={`rounded-2xl p-4 ${correcaoPeca.incompatibilidade ? "bg-red-100" : "bg-slate-100"}`}>
                     <p className="font-bold">Nota real da peça</p>
                     <p className="text-4xl font-black">{correcaoPeca.nota.toFixed(1)} / 5,0</p>
+                    {correcaoPeca.mensagemIncompatibilidade && (
+                      <p className="mt-3 font-bold text-red-700">{correcaoPeca.mensagemIncompatibilidade}</p>
+                    )}
                   </div>
 
                   {correcaoPeca.itens.map((item) => (
@@ -646,10 +632,8 @@ export default function Home() {
                       }`}
                     >
                       <p className="font-black">
-                        {item.acertou ? "✅" : "❌"} {item.titulo}: {item.pontos.toFixed(1)} /{" "}
-                        {item.maximo.toFixed(1)}
+                        {item.acertou ? "✅" : "❌"} {item.titulo}: {item.pontos.toFixed(1)} / {item.maximo.toFixed(1)}
                       </p>
-
                       {!item.acertou && (
                         <>
                           <p className="mt-2 text-red-700">{item.erro}</p>
@@ -666,35 +650,22 @@ export default function Home() {
 
             <div className="rounded-3xl border bg-white p-6">
               <h2 className="text-3xl font-black">Correção das Questões</h2>
-
               {correcoesQuestoes.length === 0 ? (
-                <p className="mt-4 text-slate-600">Responda o simulado na aba QUESTÕES para ver os erros.</p>
+                <p className="mt-4 text-slate-600">Responda o simulado na aba QUESTÕES.</p>
               ) : (
-                <div className="mt-4 space-y-4">
-                  {correcoesQuestoes.map((correcao) => (
-                    <div key={correcao.id} className="rounded-2xl bg-slate-100 p-4">
-                      <p className="font-black">
-                        Questão {correcao.id}: {correcao.nota.toFixed(2)} / {correcao.maximo.toFixed(2)}
-                      </p>
-
-                      <p className="mt-3 font-bold text-emerald-700">Acertos</p>
-                      <ul className="list-disc pl-6 text-sm">
-                        {correcao.acertos.length > 0 ? (
-                          correcao.acertos.map((item) => <li key={item}>{item}</li>)
-                        ) : (
-                          <li>Nenhum item essencial identificado.</li>
-                        )}
-                      </ul>
-
-                      <p className="mt-3 font-bold text-red-700">O que faltou</p>
-                      <ul className="list-disc pl-6 text-sm">
-                        {correcao.erros.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                correcoesQuestoes.map((correcao) => (
+                  <div key={correcao.id} className="mt-4 rounded-2xl bg-slate-100 p-4">
+                    <p className="font-black">
+                      Questão {correcao.id}: {correcao.nota.toFixed(2)} / {correcao.maximo.toFixed(2)}
+                    </p>
+                    <p className="mt-3 font-bold text-red-700">O que faltou</p>
+                    <ul className="list-disc pl-6 text-sm">
+                      {correcao.erros.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
               )}
             </div>
           </section>
@@ -703,46 +674,14 @@ export default function Home() {
         {aba === "revisao" && (
           <section className="rounded-3xl border bg-white p-6">
             <h2 className="text-3xl font-black">Revisão Obrigatória</h2>
-
-            <p className="mt-2 text-slate-600">
-              Aqui o aluno aprende com os erros antes de avançar.
-            </p>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-100 p-4">
-                <h3 className="font-black">1. Refaça o item zerado</h3>
-                <p className="text-sm">Pegue os erros da aba Correção e reescreva apenas aquele trecho.</p>
-              </div>
-
-              <div className="rounded-2xl bg-slate-100 p-4">
-                <h3 className="font-black">2. Decore o fundamento</h3>
-                <p className="text-sm">CF, CTN, LEF, LC 116, Lei 12.016 e súmulas devem aparecer no texto.</p>
-              </div>
-
-              <div className="rounded-2xl bg-slate-100 p-4">
-                <h3 className="font-black">3. Treine de novo</h3>
-                <p className="text-sm">Abaixo de 8,0, o treino deve ser repetido até virar automático.</p>
-              </div>
-            </div>
+            <p className="mt-2 text-slate-600">Revise os itens zerados antes de avançar.</p>
           </section>
         )}
 
         {aba === "testes" && (
           <section className="rounded-3xl border bg-white p-6">
             <h2 className="text-3xl font-black">Testes e Simulados</h2>
-
-            <p className="mt-2 text-slate-600">
-              Simulado atual: 1 peça + 4 questões. Acesse as abas PEÇA e QUESTÕES para responder.
-            </p>
-
-            <div className="mt-6 rounded-2xl bg-slate-100 p-5">
-              <h3 className="text-xl font-black">Simulado 01 — Tributário Hard</h3>
-              <p className="mt-2">Peça sugerida: Mandado de Segurança.</p>
-              <p>Questões: contribuição, anistia/remissão, ITBI, cautelar fiscal.</p>
-              <p className="mt-3 font-bold">
-                Meta: peça mínima 4,0 + questões mínima 4,0 = nota final 8,0.
-              </p>
-            </div>
+            <p className="mt-2 text-slate-600">Simulado atual: 1 peça + questões discursivas.</p>
           </section>
         )}
       </div>
