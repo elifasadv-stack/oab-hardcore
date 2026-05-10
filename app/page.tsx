@@ -74,12 +74,6 @@ function scoreColor(score: number) {
 }
 
 function calcularResultado(notaPeca: number, notaQuestoes: number | string) {
-  return criteriosPeca.reduce((total, criterio) => {
-    return total + (checks[criterio.nome] ? criterio.peso : 0);
-  }, 0);
-}
-
-function calcularResultado(notaPeca: number, notaQuestoes: number | string) {
   const questoes = Math.max(0, Math.min(5, Number(notaQuestoes) || 0));
   const final = Math.min(10, notaPeca + questoes);
 
