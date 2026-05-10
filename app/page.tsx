@@ -79,9 +79,10 @@ function calcularResultado(notaPeca: number, notaQuestoes: number | string) {
   }, 0);
 }
 
-function calcularResultado(notaPeca, notaQuestoes) {
+function calcularResultado(notaPeca: number, notaQuestoes: number | string) {
   const questoes = Math.max(0, Math.min(5, Number(notaQuestoes) || 0));
   const final = Math.min(10, notaPeca + questoes);
+
   return {
     notaQuestoesNormalizada: questoes,
     notaFinal: final,
