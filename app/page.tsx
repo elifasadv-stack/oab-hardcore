@@ -67,7 +67,7 @@ function Icon({
   );
 }
 
-function scoreColor(score) {
+function scoreColor(score: number) {
   if (score >= 8) return "text-emerald-600";
   if (score >= 6) return "text-amber-600";
   return "text-red-600";
