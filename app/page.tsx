@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 type Aba = "peca" | "questoes" | "correcao" | "revisao" | "testes";
+
 type TipoPeca =
   | "Mandado de Segurança"
   | "Ação Anulatória"
@@ -70,381 +71,170 @@ const tiposPeca: TipoPeca[] = [
   "Ação de Consignação em Pagamento",
 ];
 
+const criteriosMS: Criterio[] = [
+  {
+    id: "enderecamento",
+    titulo: "Endereçamento",
+    pontos: 0.3,
+    palavras: ["excelentíssimo", "vara", "juízo", "juizo"],
+    erro: "Endereçamento ausente ou genérico.",
+    melhoria: "Indique o juízo competente.",
+  },
+  {
+    id: "qualificacao",
+    titulo: "Qualificação",
+    pontos: 0.3,
+    palavras: ["nacionalidade", "estado civil", "cpf", "cnpj", "endereço"],
+    erro: "Qualificação incompleta.",
+    melhoria: "Inclua dados completos da parte e advogado.",
+  },
+  {
+    id: "nome",
+    titulo: "Nome da peça",
+    pontos: 0.3,
+    palavras: ["mandado de segurança"],
+    erro: "Nome da peça não identificado.",
+    melhoria: "Use: MANDADO DE SEGURANÇA COM PEDIDO LIMINAR.",
+  },
+  {
+    id: "autoridade",
+    titulo: "Autoridade coatora",
+    pontos: 0.4,
+    palavras: ["autoridade coatora", "secretário", "delegado", "fiscal"],
+    erro: "Autoridade coatora ausente.",
+    melhoria: "Indique quem praticou o ato ilegal.",
+  },
+  {
+    id: "cabimento",
+    titulo: "Cabimento",
+    pontos: 0.5,
+    palavras: ["direito líquido", "direito liquido", "prova pré-constituída", "prova pre-constituida", "lei 12.016"],
+    erro: "Cabimento do MS fraco.",
+    melhoria: "Explique direito líquido e certo, prova documental e ato ilegal.",
+  },
+  {
+    id: "tempestividade",
+    titulo: "Tempestividade",
+    pontos: 0.4,
+    palavras: ["120 dias", "cento e vinte", "art. 23"],
+    erro: "Não demonstrou o prazo de 120 dias.",
+    melhoria: "Cite o art. 23 da Lei 12.016/2009.",
+  },
+  {
+    id: "tese",
+    titulo: "Tese tributária principal",
+    pontos: 0.9,
+    palavras: ["ctn", "constituição", "crfb", "lei complementar", "súmula", "sumula", "legalidade", "imunidade", "prescrição", "decadência"],
+    erro: "Tese tributária principal insuficiente.",
+    melhoria: "Fundamente com CF, CTN, lei aplicável e súmulas.",
+  },
+  {
+    id: "sancao",
+    titulo: "Tese contra sanção política",
+    pontos: 0.4,
+    palavras: ["sanção política", "sancao politica", "súmula 70", "súmula 323", "súmula 547", "sumula 70", "sumula 323", "sumula 547"],
+    erro: "Não trabalhou sanção política.",
+    melhoria: "Use Súmulas 70, 323 e 547 do STF quando houver restrição indireta.",
+  },
+  {
+    id: "liminar",
+    titulo: "Liminar",
+    pontos: 0.5,
+    palavras: ["liminar", "fumus boni iuris", "periculum in mora", "urgência", "urgencia"],
+    erro: "Liminar incompleta.",
+    melhoria: "Demonstre fumus boni iuris e periculum in mora.",
+  },
+  {
+    id: "pedidos",
+    titulo: "Pedidos",
+    pontos: 0.6,
+    palavras: ["requer", "notificação", "notificacao", "ministério público", "ministerio publico", "concessão definitiva", "concessao definitiva"],
+    erro: "Pedidos incompletos.",
+    melhoria: "Inclua liminar, notificação, ciência do ente, MP e concessão definitiva.",
+  },
+  {
+    id: "valor",
+    titulo: "Valor da causa",
+    pontos: 0.2,
+    palavras: ["valor da causa"],
+    erro: "Faltou valor da causa.",
+    melhoria: "Inclua tópico próprio do valor da causa.",
+  },
+  {
+    id: "fechamento",
+    titulo: "Fechamento",
+    pontos: 0.3,
+    palavras: ["local", "data", "advogado", "oab"],
+    erro: "Fechamento incompleto.",
+    melhoria: "Finalize com local, data, advogado e OAB.",
+  },
+];
+
+const criteriosGenericos: Criterio[] = [
+  {
+    id: "enderecamento",
+    titulo: "Endereçamento",
+    pontos: 0.4,
+    palavras: ["excelentíssimo", "vara", "juízo", "juizo"],
+    erro: "Endereçamento ausente.",
+    melhoria: "Indique o juízo competente.",
+  },
+  {
+    id: "nome",
+    titulo: "Nome da peça",
+    pontos: 0.5,
+    palavras: ["ação", "acao", "embargos", "consignação", "consignacao", "repetição", "repeticao"],
+    erro: "Nome da peça não identificado.",
+    melhoria: "Indique expressamente o nome da peça.",
+  },
+  {
+    id: "cabimento",
+    titulo: "Cabimento",
+    pontos: 0.7,
+    palavras: ["cabível", "cabivel", "ctn", "lef", "cpc", "lei"],
+    erro: "Cabimento insuficiente.",
+    melhoria: "Explique por que a peça é adequada ao caso.",
+  },
+  {
+    id: "tese",
+    titulo: "Tese tributária",
+    pontos: 1.4,
+    palavras: ["ctn", "constituição", "crfb", "legalidade", "imunidade", "prescrição", "decadência", "lançamento"],
+    erro: "Tese tributária insuficiente.",
+    melhoria: "Desenvolva a tese com fundamento legal completo.",
+  },
+  {
+    id: "pedidos",
+    titulo: "Pedidos",
+    pontos: 1.0,
+    palavras: ["requer", "procedência", "procedencia", "citação", "citacao", "condenação", "condenacao"],
+    erro: "Pedidos incompletos.",
+    melhoria: "Faça pedidos completos conforme a peça.",
+  },
+  {
+    id: "valor",
+    titulo: "Valor da causa",
+    pontos: 0.4,
+    palavras: ["valor da causa"],
+    erro: "Faltou valor da causa.",
+    melhoria: "Inclua valor da causa.",
+  },
+  {
+    id: "fechamento",
+    titulo: "Fechamento",
+    pontos: 0.6,
+    palavras: ["local", "data", "advogado", "oab"],
+    erro: "Fechamento incompleto.",
+    melhoria: "Finalize com local, data, advogado e OAB.",
+  },
+];
+
 const criteriosPorPeca: Record<TipoPeca, Criterio[]> = {
-  "Mandado de Segurança": [
-    {
-      id: "enderecamento",
-      titulo: "Endereçamento",
-      pontos: 0.3,
-      palavras: ["excelentíssimo", "vara", "juízo", "juizo"],
-      erro: "Endereçamento ausente ou genérico.",
-      melhoria: "Indique o juízo competente: Vara da Fazenda Pública ou Vara Federal, conforme o ente tributante.",
-    },
-    {
-      id: "qualificacao",
-      titulo: "Qualificação",
-      pontos: 0.3,
-      palavras: ["nacionalidade", "estado civil", "cpf", "cnpj", "endereço"],
-      erro: "Qualificação incompleta.",
-      melhoria: "Inclua nome, nacionalidade, estado civil, profissão, CPF/CNPJ, endereço e advogado.",
-    },
-    {
-      id: "nome",
-      titulo: "Nome da peça",
-      pontos: 0.3,
-      palavras: ["mandado de segurança"],
-      erro: "Nome da peça não identificado.",
-      melhoria: "Declare expressamente: MANDADO DE SEGURANÇA COM PEDIDO LIMINAR.",
-    },
-    {
-      id: "autoridade",
-      titulo: "Autoridade coatora",
-      pontos: 0.4,
-      palavras: ["autoridade coatora", "secretário", "delegado", "fiscal"],
-      erro: "Autoridade coatora ausente.",
-      melhoria: "Indique quem praticou o ato ilegal: secretário, delegado, diretor ou agente responsável.",
-    },
-    {
-      id: "cabimento",
-      titulo: "Cabimento",
-      pontos: 0.5,
-      palavras: ["direito líquido", "direito liquido", "prova pré-constituída", "prova pre-constituida", "lei 12.016"],
-      erro: "Cabimento do MS fraco.",
-      melhoria: "Explique direito líquido e certo, prova pré-constituída e ato ilegal de autoridade.",
-    },
-    {
-      id: "tempestividade",
-      titulo: "Tempestividade",
-      pontos: 0.4,
-      palavras: ["120 dias", "cento e vinte", "art. 23"],
-      erro: "Não demonstrou o prazo de 120 dias.",
-      melhoria: "Cite o art. 23 da Lei 12.016/2009 e diga que o MS é tempestivo.",
-    },
-    {
-      id: "liquido",
-      titulo: "Direito líquido e certo",
-      pontos: 0.4,
-      palavras: ["direito líquido e certo", "direito liquido e certo"],
-      erro: "Não afirmou direito líquido e certo.",
-      melhoria: "Mostre que o direito é comprovável por documentos, sem dilação probatória.",
-    },
-    {
-      id: "tese",
-      titulo: "Tese tributária principal",
-      pontos: 0.8,
-      palavras: ["ctn", "constituição", "crfb", "lei complementar", "súmula", "sumula", "legalidade", "imunidade", "prescrição", "decadência"],
-      erro: "Tese tributária principal insuficiente.",
-      melhoria: "Fundamente com CF, CTN, LC aplicável e súmulas do STF/STJ quando houver.",
-    },
-    {
-      id: "sancao",
-      titulo: "Tese contra sanção política",
-      pontos: 0.4,
-      palavras: ["sanção política", "sancao politica", "súmula 70", "súmula 323", "súmula 547", "sumula 70", "sumula 323", "sumula 547"],
-      erro: "Não trabalhou sanção política.",
-      melhoria: "Quando houver restrição de atividade/alvará/certidão, cite a vedação às sanções políticas e as Súmulas 70, 323 e 547 do STF.",
-    },
-    {
-      id: "liminar",
-      titulo: "Liminar",
-      pontos: 0.5,
-      palavras: ["liminar", "fumus boni iuris", "periculum in mora", "urgência", "urgencia"],
-      erro: "Liminar incompleta.",
-      melhoria: "Peça liminar e demonstre fumus boni iuris e periculum in mora.",
-    },
-    {
-      id: "pedidos",
-      titulo: "Pedidos",
-      pontos: 0.5,
-      palavras: ["requer", "notificação", "notificacao", "ministério público", "ministerio publico", "concessão definitiva", "concessao definitiva"],
-      erro: "Pedidos incompletos.",
-      melhoria: "Inclua liminar, notificação da autoridade, ciência do ente, MP e concessão definitiva da segurança.",
-    },
-    {
-      id: "valor",
-      titulo: "Valor da causa",
-      pontos: 0.2,
-      palavras: ["valor da causa"],
-      erro: "Faltou valor da causa.",
-      melhoria: "Crie tópico próprio: DO VALOR DA CAUSA.",
-    },
-    {
-      id: "fechamento",
-      titulo: "Fechamento",
-      pontos: 0.3,
-      palavras: ["local", "data", "advogado", "oab"],
-      erro: "Fechamento incompleto.",
-      melhoria: "Finalize com: local..., data..., Advogado..., OAB....",
-    },
-  ],
-
-  "Ação Anulatória": [
-    {
-      id: "enderecamento",
-      titulo: "Endereçamento",
-      pontos: 0.4,
-      palavras: ["excelentíssimo", "vara", "juízo", "juizo"],
-      erro: "Endereçamento ausente.",
-      melhoria: "Direcione ao juízo competente, normalmente Vara da Fazenda Pública ou Vara Federal.",
-    },
-    {
-      id: "nome",
-      titulo: "Nome da peça",
-      pontos: 0.4,
-      palavras: ["ação anulatória", "acao anulatoria"],
-      erro: "Nome da peça incorreto.",
-      melhoria: "Use: AÇÃO ANULATÓRIA DE DÉBITO FISCAL.",
-    },
-    {
-      id: "cabimento",
-      titulo: "Cabimento",
-      pontos: 0.7,
-      palavras: ["lançamento", "lancamento", "crédito tributário", "credito tributario", "art. 38", "lef"],
-      erro: "Cabimento da anulatória não demonstrado.",
-      melhoria: "Explique que há lançamento/crédito tributário a ser desconstituído, com base no art. 38 da LEF.",
-    },
-    {
-      id: "tutela",
-      titulo: "Tutela de urgência",
-      pontos: 0.5,
-      palavras: ["tutela de urgência", "tutela de urgencia", "art. 300", "art. 151", "suspensão da exigibilidade"],
-      erro: "Não pediu tutela para suspender a exigibilidade.",
-      melhoria: "Peça tutela de urgência com art. 300 do CPC e art. 151, V, do CTN.",
-    },
-    {
-      id: "tese",
-      titulo: "Tese tributária",
-      pontos: 1.2,
-      palavras: ["ctn", "constituição", "crfb", "legalidade", "anterioridade", "decadência", "prescrição", "imunidade"],
-      erro: "Tese de mérito insuficiente.",
-      melhoria: "Ataque a ilegalidade do lançamento com CF, CTN e legislação específica.",
-    },
-    {
-      id: "provas",
-      titulo: "Provas",
-      pontos: 0.4,
-      palavras: ["provas", "pericial", "documental"],
-      erro: "Não indicou produção de provas.",
-      melhoria: "Na anulatória, peça prova documental, pericial e demais admitidas.",
-    },
-    {
-      id: "pedidos",
-      titulo: "Pedidos",
-      pontos: 0.7,
-      palavras: ["citação", "citacao", "procedência", "procedencia", "desconstituir", "anular"],
-      erro: "Pedidos incompletos.",
-      melhoria: "Peça citação, tutela, procedência para anular/desconstituir o lançamento, custas e honorários.",
-    },
-    {
-      id: "valor",
-      titulo: "Valor da causa",
-      pontos: 0.3,
-      palavras: ["valor da causa"],
-      erro: "Faltou valor da causa.",
-      melhoria: "O valor da causa normalmente corresponde ao valor do débito discutido.",
-    },
-    {
-      id: "fechamento",
-      titulo: "Fechamento",
-      pontos: 0.4,
-      palavras: ["local", "data", "advogado", "oab"],
-      erro: "Fechamento incompleto.",
-      melhoria: "Finalize com local, data, advogado e OAB.",
-    },
-  ],
-
-  "Repetição de Indébito": [
-    {
-      id: "nome",
-      titulo: "Nome da peça",
-      pontos: 0.5,
-      palavras: ["repetição de indébito", "repeticao de indebito"],
-      erro: "Nome da peça não identificado.",
-      melhoria: "Use: AÇÃO DE REPETIÇÃO DE INDÉBITO TRIBUTÁRIO.",
-    },
-    {
-      id: "pagamento",
-      titulo: "Pagamento indevido",
-      pontos: 0.8,
-      palavras: ["pagou", "pagamento indevido", "tributo indevido", "indevido"],
-      erro: "Não demonstrou pagamento indevido.",
-      melhoria: "Mostre que houve pagamento de tributo indevido ou maior que o devido.",
-    },
-    {
-      id: "fundamento",
-      titulo: "Art. 165 do CTN",
-      pontos: 0.8,
-      palavras: ["art. 165", "165 do ctn"],
-      erro: "Faltou art. 165 do CTN.",
-      melhoria: "Fundamente a restituição no art. 165 do CTN.",
-    },
-    {
-      id: "prazo",
-      titulo: "Prazo de 5 anos",
-      pontos: 0.6,
-      palavras: ["art. 168", "168 do ctn", "5 anos", "cinco anos"],
-      erro: "Não indicou prazo quinquenal.",
-      melhoria: "Cite art. 168 do CTN e prazo de 5 anos.",
-    },
-    {
-      id: "compensacao",
-      titulo: "Restituição/compensação",
-      pontos: 0.5,
-      palavras: ["restituição", "restituicao", "compensação", "compensacao"],
-      erro: "Não pediu restituição ou compensação.",
-      melhoria: "Peça restituição e, se cabível, compensação.",
-    },
-    {
-      id: "pedidos",
-      titulo: "Pedidos",
-      pontos: 0.8,
-      palavras: ["citação", "citacao", "procedência", "procedencia", "condenação", "condenacao"],
-      erro: "Pedidos incompletos.",
-      melhoria: "Peça citação, procedência, condenação à restituição/compensação, juros e correção.",
-    },
-    {
-      id: "valor",
-      titulo: "Valor da causa",
-      pontos: 0.4,
-      palavras: ["valor da causa"],
-      erro: "Faltou valor da causa.",
-      melhoria: "Use como valor da causa o montante a repetir.",
-    },
-    {
-      id: "fechamento",
-      titulo: "Fechamento",
-      pontos: 0.6,
-      palavras: ["local", "data", "advogado", "oab"],
-      erro: "Fechamento incompleto.",
-      melhoria: "Finalize com local, data, advogado e OAB.",
-    },
-  ],
-
-  "Embargos à Execução Fiscal": [
-    {
-      id: "nome",
-      titulo: "Nome da peça",
-      pontos: 0.5,
-      palavras: ["embargos à execução", "embargos a execucao", "execução fiscal", "execucao fiscal"],
-      erro: "Nome da peça não identificado.",
-      melhoria: "Use: EMBARGOS À EXECUÇÃO FISCAL.",
-    },
-    {
-      id: "garantia",
-      titulo: "Garantia do juízo",
-      pontos: 0.7,
-      palavras: ["garantia do juízo", "garantia do juizo", "penhora", "depósito", "deposito"],
-      erro: "Não demonstrou garantia do juízo.",
-      melhoria: "Embargos exigem garantia do juízo, como penhora, depósito ou fiança.",
-    },
-    {
-      id: "prazo",
-      titulo: "Prazo de 30 dias",
-      pontos: 0.7,
-      palavras: ["30 dias", "trinta dias", "art. 16"],
-      erro: "Não indicou prazo dos embargos.",
-      melhoria: "Cite prazo de 30 dias do art. 16 da LEF.",
-    },
-    {
-      id: "cda",
-      titulo: "CDA",
-      pontos: 0.6,
-      palavras: ["cda", "certidão de dívida ativa", "certidao de divida ativa"],
-      erro: "Não atacou a CDA.",
-      melhoria: "Verifique nulidades da CDA: certeza, liquidez, exigibilidade e requisitos legais.",
-    },
-    {
-      id: "tese",
-      titulo: "Matéria de defesa",
-      pontos: 1.0,
-      palavras: ["ctn", "prescrição", "prescricao", "decadência", "decadencia", "ilegitimidade", "responsabilidade"],
-      erro: "Matéria de defesa insuficiente.",
-      melhoria: "Ataque prescrição, decadência, ilegitimidade, nulidade ou inexistência do crédito.",
-    },
-    {
-      id: "pedidos",
-      titulo: "Pedidos",
-      pontos: 0.8,
-      palavras: ["procedência", "procedencia", "extinção", "extincao", "desconstituição", "desconstituicao"],
-      erro: "Pedidos incompletos.",
-      melhoria: "Peça procedência, extinção/desconstituição do crédito, levantamento da penhora e honorários.",
-    },
-    {
-      id: "valor",
-      titulo: "Valor da causa",
-      pontos: 0.3,
-      palavras: ["valor da causa"],
-      erro: "Faltou valor da causa.",
-      melhoria: "Use o valor executado como valor da causa.",
-    },
-    {
-      id: "fechamento",
-      titulo: "Fechamento",
-      pontos: 0.4,
-      palavras: ["local", "data", "advogado", "oab"],
-      erro: "Fechamento incompleto.",
-      melhoria: "Finalize com local, data, advogado e OAB.",
-    },
-  ],
-
-  "Ação de Consignação em Pagamento": [
-    {
-      id: "nome",
-      titulo: "Nome da peça",
-      pontos: 0.5,
-      palavras: ["consignação em pagamento", "consignacao em pagamento"],
-      erro: "Nome da peça não identificado.",
-      melhoria: "Use: AÇÃO DE CONSIGNAÇÃO EM PAGAMENTO.",
-    },
-    {
-      id: "cabimento",
-      titulo: "Cabimento",
-      pontos: 0.9,
-      palavras: ["recusa", "dúvida", "duvida", "exigência", "exigencia", "art. 164"],
-      erro: "Cabimento da consignação insuficiente.",
-      melhoria: "Explique recusa do fisco, dúvida sobre credor ou exigência abusiva, com art. 164 do CTN.",
-    },
-    {
-      id: "deposito",
-      titulo: "Depósito",
-      pontos: 0.7,
-      palavras: ["depósito", "deposito", "consignar"],
-      erro: "Não indicou depósito/consignação.",
-      melhoria: "Peça autorização para depositar/consignar o valor devido.",
-    },
-    {
-      id: "tese",
-      titulo: "Tese tributária",
-      pontos: 1.0,
-      palavras: ["ctn", "tributo", "fisco", "cobrança", "cobranca"],
-      erro: "Tese tributária insuficiente.",
-      melhoria: "Explique por que a cobrança, recusa ou dúvida justifica a consignação.",
-    },
-    {
-      id: "pedidos",
-      titulo: "Pedidos",
-      pontos: 1.0,
-      palavras: ["citação", "citacao", "procedência", "procedencia", "extinção", "extincao"],
-      erro: "Pedidos incompletos.",
-      melhoria: "Peça citação, depósito, procedência e extinção do crédito até o limite consignado.",
-    },
-    {
-      id: "valor",
-      titulo: "Valor da causa",
-      pontos: 0.4,
-      palavras: ["valor da causa"],
-      erro: "Faltou valor da causa.",
-      melhoria: "Use o valor a consignar.",
-    },
-    {
-      id: "fechamento",
-      titulo: "Fechamento",
-      pontos: 0.5,
-      palavras: ["local", "data", "advogado", "oab"],
-      erro: "Fechamento incompleto.",
-      melhoria: "Finalize com local, data, advogado e OAB.",
-    },
-  ],
+  "Mandado de Segurança": criteriosMS,
+  "Ação Anulatória": criteriosGenericos,
+  "Repetição de Indébito": criteriosGenericos,
+  "Embargos à Execução Fiscal": criteriosGenericos,
+  "Ação de Consignação em Pagamento": criteriosGenericos,
 };
 
 const questoesSimulado: Questao[] = [
@@ -454,11 +244,11 @@ const questoesSimulado: Questao[] = [
     enunciado:
       "Município instituiu contribuição para custear câmeras de segurança em logradouros públicos. Entidades religiosas alegam imunidade. Responda se a contribuição é válida e se a imunidade alcança a cobrança.",
     espelho: [
-      "Município pode instituir contribuição para custeio, expansão e melhoria de iluminação/monitoramento de logradouros públicos.",
+      "Município pode instituir contribuição para custeio, expansão e melhoria de sistemas de monitoramento.",
       "A imunidade religiosa do art. 150, VI, b, da CF restringe-se a impostos.",
       "Contribuições não são abrangidas por essa imunidade específica.",
     ],
-    artigos: ["art. 149-A", "art. 150", "vi", "b"],
+    artigos: ["art. 149-a", "art. 150", "vi", "b"],
     pontos: 1.25,
   },
   {
@@ -494,19 +284,13 @@ const questoesSimulado: Questao[] = [
       "Em cautelar fiscal, juiz concede liminar para bloquear bens. Qual recurso cabe contra a liminar e de quando conta o prazo para contestar?",
     espelho: [
       "Cabe agravo de instrumento contra a liminar.",
-      "O prazo de contestação conta da juntada do mandado de execução da cautelar, quando concedida liminarmente.",
+      "O prazo de contestação conta da juntada do mandado de execução da cautelar.",
       "Aplicação da Lei 8.397/1992.",
     ],
     artigos: ["agravo de instrumento", "art. 7", "art. 8", "lei 8.397"],
     pontos: 1.25,
   },
 ];
-
-function scoreColor(score: number): string {
-  if (score >= 8) return "text-emerald-600";
-  if (score >= 6) return "text-amber-600";
-  return "text-red-600";
-}
 
 function normalizar(texto: string): string {
   return texto
@@ -518,6 +302,12 @@ function normalizar(texto: string): string {
 function contemAlguma(texto: string, palavras: string[]): boolean {
   const base = normalizar(texto);
   return palavras.some((palavra) => base.includes(normalizar(palavra)));
+}
+
+function scoreColor(score: number): string {
+  if (score >= 8) return "text-emerald-600";
+  if (score >= 6) return "text-amber-600";
+  return "text-red-600";
 }
 
 function corrigirPeca(tipo: TipoPeca, texto: string): CorrecaoPeca {
@@ -540,26 +330,18 @@ function corrigirPeca(tipo: TipoPeca, texto: string): CorrecaoPeca {
     itens.reduce((total, item) => total + item.pontos, 0).toFixed(1)
   );
 
-  const pontosFortes = itens
-    .filter((item) => item.acertou)
-    .map((item) => `${item.titulo}: item encontrado e pontuado.`);
-
-  const pontosFracos = itens
-    .filter((item) => !item.acertou)
-    .map((item) => item.erro);
-
-  const planoMelhoria = itens
-    .filter((item) => !item.acertou)
-    .map((item) => item.melhoria);
-
   return {
     tipo,
     nota,
     maximo: 5,
     itens,
-    pontosFortes,
-    pontosFracos,
-    planoMelhoria,
+    pontosFortes: itens
+      .filter((item) => item.acertou)
+      .map((item) => `${item.titulo}: item encontrado.`),
+    pontosFracos: itens.filter((item) => !item.acertou).map((item) => item.erro),
+    planoMelhoria: itens
+      .filter((item) => !item.acertou)
+      .map((item) => item.melhoria),
   };
 }
 
@@ -604,13 +386,6 @@ function calcularResultadoFinal(notaPeca: number, notaQuestoes: number): Resulta
     aprovado: final >= 8,
   };
 }
-
-type ResultadoFinal = {
-  notaPeca: number;
-  notaQuestoes: number;
-  notaFinal: number;
-  aprovado: boolean;
-};
 
 const modeloMandadoSeguranca = `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA VARA DA FAZENDA PÚBLICA DA COMARCA DO MUNICÍPIO ALFA
 
@@ -668,14 +443,11 @@ export default function Home() {
   const [tipoPeca, setTipoPeca] = useState<TipoPeca>("Mandado de Segurança");
   const [textoPeca, setTextoPeca] = useState<string>("");
   const [correcaoPeca, setCorrecaoPeca] = useState<CorrecaoPeca | null>(null);
-
   const [respostasQuestoes, setRespostasQuestoes] = useState<Record<number, string>>({});
   const [correcoesQuestoes, setCorrecoesQuestoes] = useState<CorrecaoQuestao[]>([]);
 
   const notaQuestoes = useMemo(() => {
-    return Number(
-      correcoesQuestoes.reduce((total, item) => total + item.nota, 0).toFixed(2)
-    );
+    return Number(correcoesQuestoes.reduce((total, item) => total + item.nota, 0).toFixed(2));
   }, [correcoesQuestoes]);
 
   const resultado = useMemo(() => {
@@ -683,8 +455,7 @@ export default function Home() {
   }, [correcaoPeca, notaQuestoes]);
 
   function enviarPeca(): void {
-    const novaCorrecao = corrigirPeca(tipoPeca, textoPeca);
-    setCorrecaoPeca(novaCorrecao);
+    setCorrecaoPeca(corrigirPeca(tipoPeca, textoPeca));
     setAba("correcao");
   }
 
@@ -708,6 +479,7 @@ export default function Home() {
     <main className="min-h-screen bg-slate-100 p-4 md:p-8 text-slate-900">
       <div className="mx-auto max-w-7xl rounded-3xl bg-white p-6 md:p-8 shadow-xl">
         <h1 className="text-4xl md:text-5xl font-black">Meta OAB: 8,0 ou mais</h1>
+
         <p className="mt-3 text-slate-600">
           Peça vale 5,0. Questões valem 5,0. Nota final vale 10,0. O aluno só atinge a meta com 8,0 ou mais.
         </p>
@@ -790,10 +562,7 @@ export default function Home() {
               />
 
               <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  onClick={enviarPeca}
-                  className="rounded-2xl bg-black px-6 py-3 font-bold text-white"
-                >
+                <button onClick={enviarPeca} className="rounded-2xl bg-black px-6 py-3 font-bold text-white">
                   Enviar peça para correção
                 </button>
 
@@ -812,6 +581,7 @@ export default function Home() {
 
             <div className="rounded-3xl border bg-white p-6">
               <h2 className="text-3xl font-black">Critérios desta peça</h2>
+
               <div className="mt-4 space-y-3">
                 {criteriosPorPeca[tipoPeca].map((criterio) => (
                   <div key={criterio.id} className="rounded-2xl bg-slate-100 p-4">
@@ -827,6 +597,7 @@ export default function Home() {
         {aba === "questoes" && (
           <section className="rounded-3xl border bg-white p-6">
             <h2 className="text-3xl font-black">Questões Discursivas — Simulado FGV</h2>
+
             <p className="mt-2 text-slate-600">
               Responda as 4 questões. Cada uma vale 1,25. Total: 5,0 pontos.
             </p>
@@ -847,10 +618,7 @@ export default function Home() {
               ))}
             </div>
 
-            <button
-              onClick={corrigirTodasQuestoes}
-              className="mt-6 rounded-2xl bg-black px-6 py-3 font-bold text-white"
-            >
+            <button onClick={corrigirTodasQuestoes} className="mt-6 rounded-2xl bg-black px-6 py-3 font-bold text-white">
               Corrigir questões
             </button>
           </section>
@@ -881,6 +649,7 @@ export default function Home() {
                         {item.acertou ? "✅" : "❌"} {item.titulo}: {item.pontos.toFixed(1)} /{" "}
                         {item.maximo.toFixed(1)}
                       </p>
+
                       {!item.acertou && (
                         <>
                           <p className="mt-2 text-red-700">{item.erro}</p>
@@ -934,6 +703,7 @@ export default function Home() {
         {aba === "revisao" && (
           <section className="rounded-3xl border bg-white p-6">
             <h2 className="text-3xl font-black">Revisão Obrigatória</h2>
+
             <p className="mt-2 text-slate-600">
               Aqui o aluno aprende com os erros antes de avançar.
             </p>
@@ -960,6 +730,7 @@ export default function Home() {
         {aba === "testes" && (
           <section className="rounded-3xl border bg-white p-6">
             <h2 className="text-3xl font-black">Testes e Simulados</h2>
+
             <p className="mt-2 text-slate-600">
               Simulado atual: 1 peça + 4 questões. Acesse as abas PEÇA e QUESTÕES para responder.
             </p>
