@@ -1,88 +1,53 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
 
-type Criterio = {
+type Aba = "peca" | "questoes" | "correcao" | "revisao" | "testes";
+
+type ResultadoFinal = {
+  questoes: number;
+  final: number;
+  aprovado: boolean;
+};
+
+type CriterioPeca = {
   nome: string;
-  peso: number;
+  pontos: number;
 };
 
 type QuestaoHard = {
-  titulo: string;
   enunciado: string;
   foco: string;
 };
 
-type TesteInterno = {
-  nome: string;
-  passou: boolean;
-};
-
-const pecas: string[] = [
-  "Mandado de Segurança",
-  "Ação Anulatória",
-  "Ação Declaratória",
-  "Repetição de Indébito",
-  "Embargos à Execução Fiscal",
-  "Exceção de Pré-Executividade",
-];
-
-const criteriosPeca: Criterio[] = [
-  { nome: "Endereçamento", peso: 0.4 },
-  { nome: "Qualificação e legitimidade", peso: 0.4 },
-  { nome: "Tempestividade/cabimento", peso: 0.5 },
-  { nome: "Fatos relevantes", peso: 0.4 },
-  { nome: "Fundamentação constitucional/legal", peso: 1.2 },
-  { nome: "Teses de defesa", peso: 0.8 },
-  { nome: "Pedidos completos", peso: 0.7 },
-  { nome: "Valor da causa/fechamento", peso: 0.3 },
-  { nome: "Técnica redacional", peso: 0.3 },
+const criteriosPeca: CriterioPeca[] = [
+  { nome: "enderecamento", pontos: 0.4 },
+  { nome: "qualificacao", pontos: 0.3 },
+  { nome: "fundamento", pontos: 1.0 },
+  { nome: "liminar", pontos: 0.5 },
+  { nome: "autoridade", pontos: 0.5 },
+  { nome: "pedidos", pontos: 0.8 },
+  { nome: "valorCausa", pontos: 0.3 },
+  { nome: "fechamento", pontos: 0.2 },
 ];
 
 const questoesHard: QuestaoHard[] = [
   {
-    titulo: "ICMS x ISS + imunidade recíproca",
     enunciado:
-      "Município X exige ISS de empresa pública estadual que presta serviço público essencial sem finalidade lucrativa. Ao mesmo tempo, o Estado exige ICMS sobre operação acessória ligada ao mesmo serviço. Analise competência, imunidade e eventual bis in idem.",
-    foco: "Competência, art. 150, VI, a, CF, serviço público, natureza da atividade e tributo incidente.",
+      "Lei municipal instituiu taxa de fiscalização com base de cálculo idêntica ao IPTU.",
+    foco: "Taxa, especificidade/divisibilidade, base de cálculo.",
   },
   {
-    titulo: "Lançamento, decadência e prescrição",
     enunciado:
-      "Contribuinte recebeu auto de infração de tributo sujeito a lançamento por homologação, referente a fato gerador antigo, sem pagamento antecipado. Discuta prazo decadencial, constituição do crédito e cobrança judicial.",
-    foco: "CTN, arts. 150, §4º, 173, I, 174 e Súmula 555/STJ quando aplicável.",
+      "Estado aumentou ICMS por decreto e cobrou imediatamente.",
+    foco: "Legalidade e anterioridade.",
   },
   {
-    titulo: "Taxa com base de cálculo de imposto",
     enunciado:
-      "Lei municipal instituiu taxa de fiscalização com base no faturamento bruto da empresa. O contribuinte quer impugnar a cobrança antes da inscrição em dívida ativa.",
-    foco: "Taxa, especificidade/divisibilidade, base de cálculo, CF art. 145, II e §2º.",
+      "Município condicionou alvará ao pagamento de tributo.",
+    foco: "Sanções políticas e Súmulas do STF.",
   },
 ];
-
-function Icon({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-100 text-base ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
 
 function scoreColor(score: number): string {
   if (score >= 8) return "text-emerald-600";
@@ -92,397 +57,414 @@ function scoreColor(score: number): string {
 
 function calcularNotaPeca(checks: Record<string, boolean>): number {
   return criteriosPeca.reduce((total, criterio) => {
-    return total + (checks[criterio.nome] ? criterio.peso : 0);
+    return total + (checks[criterio.nome] ? criterio.pontos : 0);
   }, 0);
 }
 
-function calcularResultado(notaPeca: number, notaQuestoes: number | string) {
-  const questoes = Math.max(0, Math.min(5, Number(notaQuestoes) || 0));
+function calcularResultado(
+  notaPeca: number,
+  notaQuestoes: number
+): ResultadoFinal {
+  const questoes = Math.max(0, Math.min(5, Number(notaQuestoes)));
   const final = Math.min(10, notaPeca + questoes);
 
   return {
-    notaQuestoesNormalizada: questoes,
-    notaFinal: final,
-    aprovadoMeta: notaPeca >= 4 && questoes >= 4 && final >= 8,
+    questoes,
+    final,
+    aprovado: final >= 8,
   };
 }
 
-function runInternalTests(): TesteInterno[] {
-  const todosMarcados: Record<string, boolean> = Object.fromEntries(
-    criteriosPeca.map((c) => [c.nome, true])
-  );
+function gerarCorrecao(texto: string): {
+  nota: number;
+  erros: string[];
+} {
+  const lower = texto.toLowerCase();
 
-  const nenhumMarcado: Record<string, boolean> = {};
+  const checks: Record<string, boolean> = {
+    enderecamento:
+      lower.includes("excelentíssimo") ||
+      lower.includes("vara"),
+    qualificacao:
+      lower.includes("nacionalidade") ||
+      lower.includes("estado civil"),
+    fundamento:
+      lower.includes("art.") ||
+      lower.includes("constituição") ||
+      lower.includes("lei 12.016"),
+    liminar: lower.includes("liminar"),
+    autoridade:
+      lower.includes("autoridade coatora") ||
+      lower.includes("secretário"),
+    pedidos:
+      lower.includes("requer") ||
+      lower.includes("pedido"),
+    valorCausa:
+      lower.includes("valor da causa"),
+    fechamento:
+      lower.includes("termos em que") ||
+      lower.includes("pede deferimento"),
+  };
 
-  const quaseTodos: Record<string, boolean> = Object.fromEntries(
-    criteriosPeca
-      .filter((c) => c.nome !== "Fundamentação constitucional/legal")
-      .map((c) => [c.nome, true])
-  );
+  const erros: string[] = [];
 
-  return [
-    {
-      nome: "Peça completa deve valer 5,0",
-      passou: Math.abs(calcularNotaPeca(todosMarcados) - 5) < 0.001,
-    },
-    {
-      nome: "Peça vazia deve valer 0,0",
-      passou: calcularNotaPeca(nenhumMarcado) === 0,
-    },
-    {
-      nome: "Nota final 4,0 + 4,0 deve aprovar na meta mínima 8,0",
-      passou: calcularResultado(4, 4).aprovadoMeta === true,
-    },
-    {
-      nome: "Nota final 3,9 + 5,0 deve bloquear por peça abaixo de 4,0",
-      passou: calcularResultado(3.9, 5).aprovadoMeta === false,
-    },
-    {
-      nome: "Questões acima de 5 devem ser limitadas a 5",
-      passou: calcularResultado(4, 9).notaQuestoesNormalizada === 5,
-    },
-    {
-      nome: "Sem fundamentação completa deve reduzir 1,2 ponto da peça",
-      passou: Math.abs(calcularNotaPeca(quaseTodos) - 3.8) < 0.001,
-    },
-  ];
+  if (!checks.enderecamento) {
+    erros.push("Faltou endereçamento.");
+  }
+
+  if (!checks.qualificacao) {
+    erros.push("Faltou qualificação das partes.");
+  }
+
+  if (!checks.fundamento) {
+    erros.push("Fundamentação jurídica fraca.");
+  }
+
+  if (!checks.liminar) {
+    erros.push("Não pediu liminar.");
+  }
+
+  if (!checks.autoridade) {
+    erros.push("Não indicou autoridade coatora.");
+  }
+
+  if (!checks.pedidos) {
+    erros.push("Pedidos incompletos.");
+  }
+
+  if (!checks.valorCausa) {
+    erros.push("Faltou valor da causa.");
+  }
+
+  if (!checks.fechamento) {
+    erros.push("Faltou fechamento da peça.");
+  }
+
+  return {
+    nota: Number(calcularNotaPeca(checks).toFixed(1)),
+    erros,
+  };
 }
 
-export default function AppTreinoOABTributarioHardcore() {
-  const [pecaEscolhida, setPecaEscolhida] = useState<string>("Mandado de Segurança");
+export default function Home() {
+  const [aba, setAba] = useState<Aba>("peca");
+
+  const [pecaSelecionada, setPecaSelecionada] =
+    useState<string>("Mandado de Segurança");
+
   const [resposta, setResposta] = useState<string>("");
-  const [checks, setChecks] = useState<Record<string, boolean>>({});
-  const [notaQuestoes, setNotaQuestoes] = useState<number>(0);
-  const [pontoCego, setPontoCego] = useState<string>("Fundamentação legal incompleta");
 
-  const notaPeca = useMemo(() => calcularNotaPeca(checks), [checks]);
+  const [notaQuestoes, setNotaQuestoes] =
+    useState<number>(4);
 
-  const { notaQuestoesNormalizada, notaFinal, aprovadoMeta } = useMemo(
-    () => calcularResultado(notaPeca, notaQuestoes),
-    [notaPeca, notaQuestoes]
-  );
+  const [correcao, setCorrecao] =
+    useState<string>("");
 
-  const tests = useMemo(() => runInternalTests(), []);
-  const testesOk = tests.every((t) => t.passou);
+  const resultado = useMemo(() => {
+    const dados = gerarCorrecao(resposta);
 
-  function toggleCriterio(nome: string) {
-    setChecks((prev) => ({ ...prev, [nome]: !prev[nome] }));
+    return calcularResultado(
+      dados.nota,
+      notaQuestoes
+    );
+  }, [resposta, notaQuestoes]);
+
+  function corrigirPeca(): void {
+    const dados = gerarCorrecao(resposta);
+
+    const texto =
+      `Nota da peça: ${dados.nota.toFixed(1)}/5,0\n\n` +
+      (dados.erros.length > 0
+        ? `Pontos cegos:\n- ${dados.erros.join(
+            "\n- "
+          )}`
+        : "Excelente estrutura. Peça muito forte.");
+
+    setCorrecao(texto);
   }
 
-  function handleNotaQuestoes(value: string) {
-    const parsed = Number(value);
-    setNotaQuestoes(Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(5, parsed)));
-  }
+  const modeloMandadoSeguranca = `
+EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA VARA DA FAZENDA PÚBLICA DA COMARCA DO MUNICÍPIO ALFA
 
-  function resetTreino() {
-    setChecks({});
-    setResposta("");
-    setNotaQuestoes(0);
-    setPontoCego("Fundamentação legal incompleta");
-  }
+JOÃO..., nacionalidade..., estado civil..., comerciante..., portador do RG..., CPF..., residente..., por intermédio de seu advogado..., com fundamento no art. 5º, LXIX, da Constituição Federal e na Lei 12.016/2009, impetrar:
+
+MANDADO DE SEGURANÇA COM PEDIDO LIMINAR
+
+em face de ato praticado pelo SECRETÁRIO MUNICIPAL DE FINANÇAS DO MUNICÍPIO ALFA.
+
+I — DOS FATOS
+
+O Impetrante exerce regularmente atividade comercial.
+
+Todavia, recebeu cobrança de ISS sobre atividade não prevista na LC 116/2003.
+
+II — DO CABIMENTO
+
+O Mandado de Segurança é cabível para proteção de direito líquido e certo.
+
+III — DA ILEGALIDADE
+
+A cobrança viola:
+- art. 156, III, da CF;
+- LC 116/2003;
+- princípio da legalidade tributária.
+
+IV — DOS PEDIDOS
+
+Diante do exposto, requer:
+
+a) concessão da liminar;
+
+b) notificação da autoridade coatora;
+
+c) procedência do pedido.
+
+V — DO VALOR DA CAUSA
+
+Dá-se à causa o valor de R$ ...
+
+Termos em que,
+Pede deferimento.
+
+ADVOGADO
+OAB/UF
+`;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 text-slate-900">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-3xl bg-slate-950 text-white p-6 md:p-8 shadow-xl"
-        >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className="bg-white text-slate-950">🔥</Icon>
-                <Badge className="bg-white text-slate-950 hover:bg-white">
-                  Treino Hardcore Tributário
-                </Badge>
+    <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-3xl bg-white p-8 shadow-xl">
+          <div className="mb-8">
+            <h1 className="text-5xl font-black">
+              Meta OAB: 8,0 ou mais
+            </h1>
+
+            <p className="mt-3 text-slate-600">
+              Treino hardcore de Direito Tributário
+              focado em peça prática e correção.
+            </p>
+          </div>
+
+          <div className="mb-6 flex flex-wrap gap-3">
+            {[
+              "peca",
+              "questoes",
+              "correcao",
+              "revisao",
+              "testes",
+            ].map((item) => (
+              <button
+                key={item}
+                onClick={() =>
+                  setAba(item as Aba)
+                }
+                className={`rounded-2xl px-4 py-2 text-sm font-bold transition ${
+                  aba === item
+                    ? "bg-black text-white"
+                    : "bg-slate-200 hover:bg-slate-300"
+                }`}
+              >
+                {item.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {aba === "peca" && (
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="rounded-3xl border bg-white p-6">
+                  <h2 className="mb-4 text-3xl font-black">
+                    Treino de Peça Prática
+                  </h2>
+
+                  <label className="mb-2 block text-sm font-bold">
+                    Peça do dia
+                  </label>
+
+                  <select
+                    value={pecaSelecionada}
+                    onChange={(e) =>
+                      setPecaSelecionada(
+                        e.target.value
+                      )
+                    }
+                    className="w-full rounded-2xl border p-3"
+                  >
+                    <option>
+                      Mandado de Segurança
+                    </option>
+                    <option>
+                      Ação Anulatória
+                    </option>
+                    <option>
+                      Repetição de Indébito
+                    </option>
+                    <option>
+                      Embargos à Execução Fiscal
+                    </option>
+                  </select>
+
+                  <div className="mt-6 rounded-2xl bg-slate-100 p-4">
+                    <p className="font-bold">
+                      Comando
+                    </p>
+
+                    <p className="mt-2">
+                      Elabore a estrutura completa da
+                      peça com fundamento legal,
+                      teses e pedidos.
+                    </p>
+                  </div>
+
+                  <textarea
+                    value={resposta}
+                    onChange={(e) =>
+                      setResposta(
+                        e.target.value
+                      )
+                    }
+                    placeholder="Digite sua peça aqui..."
+                    className="mt-6 h-[500px] w-full rounded-2xl border p-4"
+                  />
+
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={corrigirPeca}
+                      className="rounded-2xl bg-black px-6 py-3 font-bold text-white transition hover:scale-105"
+                    >
+                      Enviar para correção
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setResposta(
+                          modeloMandadoSeguranca
+                        )
+                      }
+                      className="rounded-2xl bg-slate-200 px-6 py-3 font-bold"
+                    >
+                      Inserir modelo
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="rounded-3xl border bg-white p-6">
+                    <h2 className="text-3xl font-black">
+                      Resultado
+                    </h2>
+
+                    <div className="mt-6 grid grid-cols-3 gap-4">
+                      <div className="rounded-2xl bg-slate-100 p-4 text-center">
+                        <p className="text-sm">
+                          Peça
+                        </p>
+
+                        <p className="text-3xl font-black">
+                          {gerarCorrecao(
+                            resposta
+                          ).nota.toFixed(1)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-100 p-4 text-center">
+                        <p className="text-sm">
+                          Questões
+                        </p>
+
+                        <p className="text-3xl font-black">
+                          {resultado.questoes.toFixed(
+                            1
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-100 p-4 text-center">
+                        <p className="text-sm">
+                          Final
+                        </p>
+
+                        <p
+                          className={`text-3xl font-black ${scoreColor(
+                            resultado.final
+                          )}`}
+                        >
+                          {resultado.final.toFixed(
+                            1
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 rounded-2xl bg-slate-100 p-4">
+                      <p className="font-bold">
+                        Status
+                      </p>
+
+                      <p
+                        className={`mt-2 text-xl font-black ${
+                          resultado.aprovado
+                            ? "text-emerald-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {resultado.aprovado
+                          ? "APROVADO"
+                          : "REPROVADO"}
+                      </p>
+                    </div>
+
+                    {correcao && (
+                      <div className="mt-6 rounded-2xl bg-slate-100 p-4 whitespace-pre-line">
+                        {correcao}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-3xl border bg-white p-6">
+                    <h2 className="text-2xl font-black">
+                      Questões Hardcore
+                    </h2>
+
+                    <div className="mt-4 space-y-4">
+                      {questoesHard.map(
+                        (questao, index) => (
+                          <div
+                            key={index}
+                            className="rounded-2xl bg-slate-100 p-4"
+                          >
+                            <p className="font-bold">
+                              {questao.enunciado}
+                            </p>
+
+                            <p className="mt-2 text-sm text-slate-600">
+                              Foco:{" "}
+                              {questao.foco}
+                            </p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+          )}
 
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight">
-                Meta OAB: 8,0 ou mais
-              </h1>
+          {aba !== "peca" && (
+            <div className="rounded-3xl border bg-white p-10 text-center">
+              <h2 className="text-4xl font-black">
+                Em construção
+              </h2>
 
-              <p className="text-slate-300 mt-3 max-w-2xl">
-                Peça mínima 4,0 + questões mínimas 4,0. Se ficar abaixo, o app trava o avanço e exige revisão intensiva do ponto cego.
+              <p className="mt-4 text-slate-600">
+                Próxima etapa: IA de correção
+                estilo FGV.
               </p>
             </div>
-
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <Card className="rounded-2xl">
-                <CardContent className="p-4">
-                  <p className="text-xs text-slate-500">Peça</p>
-                  <p className={`text-2xl font-black ${scoreColor(notaPeca * 2)}`}>
-                    {notaPeca.toFixed(1)}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-2xl">
-                <CardContent className="p-4">
-                  <p className="text-xs text-slate-500">Questões</p>
-                  <p className={`text-2xl font-black ${scoreColor(notaQuestoesNormalizada * 2)}`}>
-                    {notaQuestoesNormalizada.toFixed(1)}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-2xl">
-                <CardContent className="p-4">
-                  <p className="text-xs text-slate-500">Final</p>
-                  <p className={`text-2xl font-black ${scoreColor(notaFinal)}`}>
-                    {notaFinal.toFixed(1)}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="rounded-3xl shadow-sm">
-            <CardContent className="p-5 flex gap-3 items-start">
-              <Icon>🎯</Icon>
-              <div>
-                <h2 className="font-bold">Regra de Ouro</h2>
-                <p className="text-sm text-slate-600">
-                  Nota menor que 8,0 gera revisão obrigatória antes do próximo simulado.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl shadow-sm">
-            <CardContent className="p-5 flex gap-3 items-start">
-              <Icon>⚖️</Icon>
-              <div>
-                <h2 className="font-bold">Correção Impiedosa</h2>
-                <p className="text-sm text-slate-600">
-                  Erro estrutural grave zera o item específico e exige refação.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl shadow-sm">
-            <CardContent className="p-5 flex gap-3 items-start">
-              <Icon>🏆</Icon>
-              <div>
-                <h2 className="font-bold">Padrão 8+</h2>
-                <p className="text-sm text-slate-600">
-                  Fato, fundamento, conclusão e pedido preciso. Sem resposta genérica.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          )}
         </div>
-
-        <Tabs defaultValue="peca" className="space-y-4">
-          <TabsList className="grid grid-cols-5 rounded-2xl">
-            <TabsTrigger value="peca">Peça</TabsTrigger>
-            <TabsTrigger value="questoes">Questões</TabsTrigger>
-            <TabsTrigger value="correcao">Correção</TabsTrigger>
-            <TabsTrigger value="revisao">Revisão</TabsTrigger>
-            <TabsTrigger value="testes">Testes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="peca">
-            <Card className="rounded-3xl shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Icon>📚</Icon>
-                  <h2 className="text-2xl font-black">Treino de Peça Prática</h2>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-semibold">Peça do dia</label>
-                    <select
-                      value={pecaEscolhida}
-                      onChange={(e) => setPecaEscolhida(e.target.value)}
-                      className="mt-2 w-full rounded-xl border p-3 bg-white"
-                    >
-                      {pecas.map((p) => (
-                        <option key={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-100 p-4">
-                    <p className="text-sm text-slate-600">Comando</p>
-                    <p className="font-semibold">
-                      Elabore a estrutura completa de {pecaEscolhida}, com fundamento legal, teses e pedidos.
-                    </p>
-                  </div>
-                </div>
-
-                <Textarea
-                  value={resposta}
-                  onChange={(e) => setResposta(e.target.value)}
-                  placeholder="Digite aqui sua peça: endereçamento, qualificação, fatos, direito, liminar se cabível, pedidos, valor da causa e fechamento..."
-                  className="min-h-[260px] rounded-2xl"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="questoes">
-            <div className="grid md:grid-cols-3 gap-4">
-              {questoesHard.map((q) => (
-                <Card key={q.titulo} className="rounded-3xl shadow-sm">
-                  <CardContent className="p-5 space-y-3">
-                    <Badge variant="outline">Nível hard</Badge>
-                    <h3 className="font-black text-lg">{q.titulo}</h3>
-                    <p className="text-sm text-slate-700">{q.enunciado}</p>
-                    <div className="rounded-2xl bg-slate-100 p-3 text-sm">
-                      <strong>Foco:</strong> {q.foco}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="correcao">
-            <Card className="rounded-3xl shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <h2 className="text-2xl font-black">Checklist de Correção da Peça</h2>
-
-                <div className="grid md:grid-cols-3 gap-3">
-                  {criteriosPeca.map((c) => (
-                    <button
-                      key={c.nome}
-                      onClick={() => toggleCriterio(c.nome)}
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        checks[c.nome] ? "bg-slate-950 text-white" : "bg-white hover:bg-slate-100"
-                      }`}
-                    >
-                      <p className="font-bold">{c.nome}</p>
-                      <p className="text-sm opacity-75">Vale {c.peso.toFixed(1)} ponto</p>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4 items-end">
-                  <div>
-                    <label className="text-sm font-semibold">Nota das questões discursivas</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={notaQuestoes}
-                      onChange={(e) => handleNotaQuestoes(e.target.value)}
-                      className="mt-2 rounded-xl"
-                    />
-                  </div>
-
-                  <Button onClick={resetTreino} className="rounded-2xl">
-                    Reiniciar treino
-                  </Button>
-                </div>
-
-                {!aprovadoMeta ? (
-                  <div className="rounded-3xl border border-red-200 bg-red-50 p-5 flex gap-3">
-                    <Icon className="bg-red-100 text-red-700">⚠️</Icon>
-                    <div>
-                      <h3 className="font-black text-red-700">Avanço bloqueado</h3>
-                      <p className="text-sm text-red-700">
-                        Meta não atingida. Revise o ponto cego antes de fazer outro simulado.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-                    <h3 className="font-black text-emerald-700">Padrão 8+ atingido</h3>
-                    <p className="text-sm text-emerald-700">
-                      Você pode avançar para uma peça mais difícil ou simulado completo.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="revisao">
-            <Card className="rounded-3xl shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <h2 className="text-2xl font-black">Revisão Intensiva Obrigatória</h2>
-
-                <div>
-                  <label className="text-sm font-semibold">Ponto cego detectado</label>
-                  <Input
-                    value={pontoCego}
-                    onChange={(e) => setPontoCego(e.target.value)}
-                    className="mt-2 rounded-xl"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="rounded-3xl bg-slate-100 p-5">
-                    <h3 className="font-black">1. Lei seca</h3>
-                    <p className="text-sm text-slate-600">
-                      Reescreva os artigos essenciais da CF/CTN ligados ao erro.
-                    </p>
-                  </div>
-
-                  <div className="rounded-3xl bg-slate-100 p-5">
-                    <h3 className="font-black">2. Tese padrão</h3>
-                    <p className="text-sm text-slate-600">
-                      Monte um parágrafo com fato, fundamento e conclusão.
-                    </p>
-                  </div>
-
-                  <div className="rounded-3xl bg-slate-100 p-5">
-                    <h3 className="font-black">3. Refação</h3>
-                    <p className="text-sm text-slate-600">
-                      Refaça o item zerado até atingir pontuação máxima.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-3xl bg-slate-950 text-white p-5">
-                  <p className="text-sm text-slate-300">Missão atual</p>
-                  <p className="text-xl font-black">Corrigir: {pontoCego}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="testes">
-            <Card className="rounded-3xl shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-2xl font-black">Testes internos do app</h2>
-                    <p className="text-sm text-slate-600">
-                      Validação básica dos cálculos de nota, limite de pontuação e regra de bloqueio.
-                    </p>
-                  </div>
-
-                  <Badge className={testesOk ? "bg-emerald-600" : "bg-red-600"}>
-                    {testesOk ? "Todos passaram" : "Falha detectada"}
-                  </Badge>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-3">
-                  {tests.map((test) => (
-                    <div
-                      key={test.nome}
-                      className={`rounded-2xl border p-4 ${
-                        test.passou ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"
-                      }`}
-                    >
-                      <p className={`font-bold ${test.passou ? "text-emerald-700" : "text-red-700"}`}>
-                        {test.passou ? "✅" : "❌"} {test.nome}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
-    </div>
+    </main>
   );
 }
