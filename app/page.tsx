@@ -73,7 +73,7 @@ function scoreColor(score: number) {
   return "text-red-600";
 }
 
-function calcularNotaPeca(checks) {
+function calcularNotaPeca(checks: Record<string, boolean>) {
   return criteriosPeca.reduce((total, criterio) => {
     return total + (checks[criterio.nome] ? criterio.peso : 0);
   }, 0);
