@@ -586,7 +586,7 @@ const bancoQuestoes: QuestaoFGV[] = [
   }
 ];
 
-// --- LÓGICA LOCAL DE INTELIGÊNCIA ---
+// --- LÓGICA LOCAL DE INTELIGÊNCIA (IA Baseada em Regras) ---
 function normalizar(texto: string): string {
   return texto
     .toLowerCase()
@@ -684,9 +684,9 @@ function calcularResultadoFinal(
 }
 
 function classeNota(nota: number): string {
-  if (nota >= 8) return "text-emerald-400 font-black";
-  if (nota >= 6) return "text-amber-400 font-black";
-  return "text-slate-300 font-bold";
+  if (nota >= 8) return "text-emerald-600";
+  if (nota >= 6) return "text-amber-600";
+  return "text-red-600";
 }
 
 // --- COMPONENTE PRINCIPAL ---
@@ -712,7 +712,7 @@ export default function Home() {
 
   function enviarPecaParaCorrecao() {
     if (!textoPeca.trim()) {
-      alert("Acredite em você: dê o primeiro passo e escreva sua peça antes de enviar!");
+      alert("Digite sua peça antes de enviar.");
       return;
     }
 
@@ -722,15 +722,14 @@ export default function Home() {
       const resultadoLocal = corrigirPecaLocal(textoPeca, pecaAtual);
       setCorrecaoPeca(resultadoLocal);
 
-      // PNL + Regra do FBI: Fazer o aluno se sentir no controle e capaz. O erro é só um "ajuste fino".
-      const textoFeedback = `Sua evolução é visível! 🚀\n\nNesta peça você alcançou ${resultadoLocal.nota.toFixed(2)} de ${resultadoLocal.notaMaxima.toFixed(2)}.\n\n` +
+      const textoFeedback = `Correção Rápida Concluída!\n\nSua nota nesta peça foi ${resultadoLocal.nota.toFixed(2)} de ${resultadoLocal.notaMaxima.toFixed(2)}.\n\n` +
         (resultadoLocal.pontosFracos.length > 0 
-          ? `Sabe o que separa os aprovados dos demais? A capacidade de ajustar a rota. Cada pequeno erro que você comete aqui, é um grande acerto garantido no dia da prova.\n\nVocê tem total capacidade de gabaritar. Foque sua atenção em lapidar estes detalhes:\n- ${resultadoLocal.pontosFracos.join('\n- ')}\n\nImagine o seu nome na lista de aprovados. Respire fundo, olhe o espelho detalhado abaixo e reforce sua mente.` 
-          : `🎉 Excelente! Você demonstrou a mentalidade exata de um advogado já aprovado! Sua peça está no mais alto padrão exigido pela FGV.`);
+          ? `⚠️ Atenção: Você deixou de pontuar nos seguintes itens estruturais:\n- ${resultadoLocal.pontosFracos.join('\n- ')}\n\nConsulte o espelho detalhado abaixo para ver o que precisa ser ajustado.` 
+          : `🎉 Excelente! Você gabaritou esta peça e atingiu todos os pontos do espelho FGV.`);
 
       setFeedbackIA(textoFeedback);
       setCorrigindo(false);
-    }, 1200);
+    }, 800);
   }
 
   function corrigirTodasAsQuestoes(): void {
@@ -787,79 +786,78 @@ Advogado / OAB`);
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 text-slate-900 md:p-8">
-      <div className="mx-auto max-w-7xl rounded-3xl bg-white p-5 shadow-2xl md:p-8 border-t-8 border-emerald-500">
-        <section className="rounded-3xl bg-slate-900 p-6 text-white md:p-8 shadow-inner relative overflow-hidden">
-          {/* Círculo decorativo ao fundo para passar segurança/tecnologia */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
-          
-          <p className="text-sm font-bold uppercase tracking-widest text-emerald-400">
-            Treino de Elite — Você no Controle
+    <main className="min-h-screen bg-slate-100 p-4 text-slate-900 md:p-8">
+      <div className="mx-auto max-w-7xl rounded-3xl bg-white p-5 shadow-xl md:p-8">
+        <section className="rounded-3xl bg-slate-950 p-6 text-white md:p-8">
+          <p className="text-sm font-bold uppercase tracking-widest text-slate-300">
+            Treino Hardcore Tributário — Padrão FGV
           </p>
-          <h1 className="mt-2 text-4xl font-black md:text-6xl text-white">
-            A Sua Aprovação <span className="text-emerald-400">é Inevitável</span>
+          <h1 className="mt-2 text-4xl font-black md:text-6xl">
+            Meta OAB: 8,0 ou mais
           </h1>
-          <p className="mt-4 max-w-3xl text-slate-300 text-lg leading-relaxed">
-            Acredite: você já tem a capacidade intelectual exata para dominar a FGV. Este sistema não apenas corrige seus erros, ele molda a sua mentalidade vencedora. Cada peça que você treina aqui te coloca diretamente rumo à sua carteira da OAB.
+          <p className="mt-4 max-w-3xl text-slate-300">
+            Peça vale 5,0. Questões valem 5,0. Nota final vale 10,0. O sistema
+            corrige por espelho local, separa peça e questões e aponta exatamente onde
+            melhorar instantaneamente.
           </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-800/50 p-4 text-center border border-slate-700">
-              <p className="text-sm font-bold text-slate-400">Pontuação da Peça</p>
-              <p className="text-4xl font-black mt-1">
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
+              <p className="text-sm font-bold text-slate-500">Peça</p>
+              <p className="text-4xl font-black">
                 {resultadoFinal.notaPeca.toFixed(2)}
               </p>
-              <p className="text-xs text-slate-500">/5,00</p>
+              <p className="text-xs">/5,00</p>
             </div>
 
-            <div className="rounded-2xl bg-slate-800/50 p-4 text-center border border-slate-700">
-              <p className="text-sm font-bold text-slate-400">Questões</p>
-              <p className="text-4xl font-black mt-1">
+            <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
+              <p className="text-sm font-bold text-slate-500">Questões</p>
+              <p className="text-4xl font-black">
                 {resultadoFinal.notaQuestoes.toFixed(2)}
               </p>
-              <p className="text-xs text-slate-500">/5,00</p>
+              <p className="text-xs">/5,00</p>
             </div>
 
-            <div className="rounded-2xl bg-slate-800/50 p-4 text-center border border-slate-700">
-              <p className="text-sm font-bold text-emerald-400">Nota Rumo à Vitória</p>
-              <p className={`mt-1 text-4xl ${classeNota(resultadoFinal.notaFinal)}`}>
+            <div className="rounded-2xl bg-white p-4 text-center text-slate-900">
+              <p className="text-sm font-bold text-slate-500">Final</p>
+              <p
+                className={`text-4xl font-black ${classeNota(
+                  resultadoFinal.notaFinal
+                )}`}
+              >
                 {resultadoFinal.notaFinal.toFixed(2)}
               </p>
-              <p className="text-xs text-slate-500">/10,00</p>
+              <p className="text-xs">/10,00</p>
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-emerald-900/40 border border-emerald-800 p-5">
-            <p className="text-sm text-emerald-400/80 uppercase font-bold tracking-wider">Seu Status Atual</p>
+          <div className="mt-6 rounded-2xl bg-slate-900 p-4">
+            <p className="text-sm text-slate-400">Status</p>
             <p
-              className={`text-2xl font-black mt-1 ${
-                resultadoFinal.aprovado ? "text-emerald-400" : "text-white"
+              className={`text-2xl font-black ${
+                resultadoFinal.aprovado ? "text-emerald-400" : "text-red-400"
               }`}
             >
               {resultadoFinal.aprovado
-                ? "🎯 PARABÉNS! VOCÊ ATINGIU O PADRÃO DE APROVAÇÃO"
-                : "🚀 EM CONSTRUÇÃO PARA A APROVAÇÃO - CONTINUE TREINANDO"}
+                ? "APROVADO NA META 8,0"
+                : "AINDA NÃO ATINGIU A META 8,0"}
             </p>
           </div>
         </section>
 
-        <nav className="my-8 flex flex-wrap gap-3 border-b pb-4">
+        <nav className="my-6 flex flex-wrap gap-3">
           {(["peca", "questoes", "correcao", "revisao", "banco"] as Aba[]).map(
             (item) => (
               <button
                 key={item}
                 onClick={() => setAba(item)}
-                className={`rounded-full px-6 py-2.5 text-sm font-bold transition-all duration-300 ${
+                className={`rounded-2xl px-4 py-2 text-sm font-black transition ${
                   aba === item
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                    ? "bg-slate-950 text-white"
+                    : "bg-slate-200 hover:bg-slate-300"
                 }`}
               >
-                {item === "peca" && "Sua Peça"}
-                {item === "questoes" && "Suas Questões"}
-                {item === "correcao" && "Diagnóstico Final"}
-                {item === "revisao" && "Mapa de Revisão"}
-                {item === "banco" && "Acervo FGV"}
+                {item.toUpperCase()}
               </button>
             )
           )}
@@ -867,11 +865,11 @@ Advogado / OAB`);
 
         {aba === "peca" && (
           <section className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
-              <h2 className="text-2xl font-black text-slate-800">Sua Prática leva à Perfeição</h2>
+            <div className="rounded-3xl border bg-white p-5 md:p-6">
+              <h2 className="text-3xl font-black">Peça prática</h2>
 
-              <label className="mt-5 block text-sm font-bold text-slate-600">
-                Qual desafio você vai dominar hoje?
+              <label className="mt-5 block text-sm font-bold">
+                Escolha o espelho FGV
               </label>
               <select
                 value={pecaId}
@@ -880,7 +878,7 @@ Advogado / OAB`);
                   setCorrecaoPeca(null);
                   setFeedbackIA("");
                 }}
-                className="mt-2 w-full rounded-2xl border-2 border-slate-200 p-3.5 bg-slate-50 text-slate-700 focus:border-emerald-500 focus:ring-0 transition"
+                className="mt-2 w-full rounded-2xl border p-3"
               >
                 {bancoPecas.map((peca) => (
                   <option key={peca.id} value={peca.id}>
@@ -889,9 +887,9 @@ Advogado / OAB`);
                 ))}
               </select>
 
-              <div className="mt-5 rounded-2xl bg-blue-50 border border-blue-100 p-5">
-                <p className="font-black text-blue-900">Caso Clínico (Enunciado)</p>
-                <p className="mt-2 text-sm text-blue-800 leading-relaxed">
+              <div className="mt-5 rounded-2xl bg-slate-100 p-4">
+                <p className="font-black">Enunciado-base</p>
+                <p className="mt-2 text-sm text-slate-700">
                   {pecaAtual.enunciado}
                 </p>
               </div>
@@ -899,75 +897,66 @@ Advogado / OAB`);
               <textarea
                 value={textoPeca}
                 onChange={(event) => setTextoPeca(event.target.value)}
-                placeholder="Visualize sua aprovação e comece a digitar o esqueleto da sua peça aqui..."
-                className="mt-5 h-[480px] w-full rounded-2xl border-2 border-slate-200 p-5 text-slate-700 focus:border-emerald-500 focus:ring-0 resize-none transition"
+                placeholder="Digite sua peça aqui..."
+                className="mt-5 h-[520px] w-full rounded-2xl border p-4"
               />
 
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   onClick={enviarPecaParaCorrecao}
                   disabled={corrigindo}
-                  className="rounded-2xl bg-emerald-600 px-6 py-3.5 font-bold text-white hover:bg-emerald-700 disabled:opacity-70 transition-colors shadow-md shadow-emerald-200 w-full md:w-auto"
+                  className="rounded-2xl bg-black px-6 py-3 font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {corrigindo ? "Lendo sua mente e avaliando..." : "Consolidar Minha Aprovação"}
+                  {corrigindo ? "Corrigindo (IA Local)..." : "Enviar para correção rápida"}
                 </button>
 
                 <button
                   onClick={inserirModeloBasico}
-                  className="rounded-2xl bg-slate-100 px-6 py-3.5 font-bold text-slate-600 hover:bg-slate-200 transition-colors w-full md:w-auto"
+                  className="rounded-2xl bg-slate-200 px-6 py-3 font-black hover:bg-slate-300"
                 >
-                  Carregar Esqueleto Base
+                  Inserir modelo básico
                 </button>
               </div>
             </div>
 
             <div className="space-y-6">
               {feedbackIA && (
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
-                  <h2 className="mb-3 text-xl font-black text-emerald-900 flex items-center gap-2">
-                    <span>💡</span> Feedback do seu Mentor
-                  </h2>
-                  <div className="text-sm leading-relaxed text-emerald-800 whitespace-pre-wrap">{feedbackIA}</div>
+                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 whitespace-pre-wrap">
+                  <h2 className="mb-4 text-2xl font-bold text-emerald-900">Resumo da Correção</h2>
+                  <div className="text-sm leading-7 text-emerald-800">{feedbackIA}</div>
                 </div>
               )}
               
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
-                <h2 className="text-2xl font-black text-slate-800">Raio-X do seu Conhecimento</h2>
+              <div className="rounded-3xl border bg-white p-5 md:p-6">
+                <h2 className="text-3xl font-black">Correção detalhada</h2>
 
                 {!correcaoPeca ? (
-                  <div className="mt-6 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                    <p className="text-slate-500 font-medium px-4">
-                      O seu sucesso deixa pistas. Envie sua peça para descobrir exatamente onde você brilhou e onde faremos o ajuste fino.
-                    </p>
-                  </div>
+                  <p className="mt-4 text-slate-600">
+                    Envie a peça para receber nota de 0 a 5, pontos fortes,
+                    pontos fracos e plano de melhoria.
+                  </p>
                 ) : (
-                  <div className="mt-5 space-y-6">
-                    <div className="flex items-center gap-4 rounded-2xl bg-emerald-50 border border-emerald-100 p-5">
-                      <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <span className="text-2xl font-black text-emerald-600">{correcaoPeca.nota.toFixed(1)}</span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-emerald-900">Sua Nota Real</p>
-                        <p className="text-sm text-emerald-700">De um total de {correcaoPeca.notaMaxima.toFixed(2)} pontos possíveis.</p>
-                      </div>
+                  <div className="mt-5 space-y-5">
+                    <div className="rounded-2xl bg-slate-100 p-4">
+                      <p className="font-bold text-slate-600">Nota real da peça</p>
+                      <p className="text-4xl font-black">
+                        {correcaoPeca.nota.toFixed(2)} /{" "}
+                        {correcaoPeca.notaMaxima.toFixed(2)}
+                      </p>
                     </div>
 
                     <div>
-                      <h3 className="font-black text-slate-800 mb-3">
-                        O Ajuste Fino para a OAB (Seu foco agora):
+                      <h3 className="font-black text-amber-700">
+                        Plano de Melhoria FGV
                       </h3>
-                      <ul className="space-y-2">
+                      <ul className="mt-2 list-disc space-y-1 pl-6">
                         {correcaoPeca.planoMelhoria.length > 0 ? (
-                          correcaoPeca.planoMelhoria.map((ponto, i) => (
-                            <li key={i} className="flex items-start gap-3 bg-amber-50 p-3 rounded-xl border border-amber-100">
-                              <span className="text-amber-500 font-bold mt-0.5">→</span>
-                              <span className="text-sm text-amber-900">{ponto}</span>
-                            </li>
+                          correcaoPeca.planoMelhoria.map((ponto) => (
+                            <li key={ponto}>{ponto}</li>
                           ))
                         ) : (
-                          <li className="flex items-start gap-3 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                            <span className="text-emerald-500 font-bold mt-0.5">★</span>
-                            <span className="text-sm text-emerald-900 font-bold">Incrível! Sua peça já está com excelência máxima exigida pela banca.</span>
+                          <li>
+                            A peça já está no padrão máximo para este espelho!
                           </li>
                         )}
                       </ul>
@@ -977,29 +966,29 @@ Advogado / OAB`);
               </div>
 
               {correcaoPeca && (
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
-                  <h2 className="text-xl font-black text-slate-800 mb-4">Mapeamento FGV: Item a Item</h2>
-                  <div className="space-y-3">
+                <div className="rounded-3xl border bg-white p-5 md:p-6">
+                  <h2 className="text-2xl font-black">Espelho item a item</h2>
+                  <div className="mt-4 space-y-3">
                     {correcaoPeca.itens.map((item) => (
                       <div
                         key={item.titulo}
-                        className={`rounded-2xl border p-4 transition-all ${
+                        className={`rounded-2xl border p-4 ${
                           item.atingiu
-                            ? "border-emerald-200 bg-emerald-50/50"
-                            : "border-slate-200 bg-slate-50"
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-red-200 bg-red-50"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className={`font-bold ${item.atingiu ? "text-emerald-800" : "text-slate-600"}`}>
-                            {item.atingiu ? "✅" : "⭕"} {item.titulo}
+                          <p className="font-black">
+                            {item.atingiu ? "✅" : "❌"} {item.titulo}
                           </p>
-                          <span className={`px-2 py-1 rounded-md text-xs font-black ${item.atingiu ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>
-                            {item.pontos.toFixed(2)} pts
-                          </span>
+                          <p className="font-black">
+                            {item.pontos.toFixed(2)}
+                          </p>
                         </div>
                         {!item.atingiu && (
-                          <p className="mt-3 text-sm text-slate-500 pl-6 border-l-2 border-slate-300 ml-2">
-                            <span className="font-semibold text-slate-700">Dica do Mentor:</span> {item.melhoria}
+                          <p className="mt-2 text-sm text-red-700">
+                            {item.melhoria}
                           </p>
                         )}
                       </div>
@@ -1013,14 +1002,15 @@ Advogado / OAB`);
 
         {aba === "questoes" && (
           <section className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
-              <h2 className="text-2xl font-black text-slate-800">Sua Batalha Discursiva</h2>
+            <div className="rounded-3xl border bg-white p-5 md:p-6">
+              <h2 className="text-3xl font-black">Questões discursivas</h2>
               <p className="mt-2 text-slate-600">
-                É aqui que você garante seus pontos de segurança. Lembre-se: Responda diretamente ao ponto. <strong>Sim ou Não + Fundamento + Artigo.</strong> Você sabe a resposta.
+                Cada questão é corrigida separadamente por espelho. A soma das
+                questões é limitada a 5,00 pontos.
               </p>
             </div>
 
-            {bancoQuestoes.map((questao, index) => {
+            {bancoQuestoes.map((questao) => {
               const correcao = correcoesQuestoes.find(
                 (item) => item.id === questao.id
               );
@@ -1028,19 +1018,16 @@ Advogado / OAB`);
               return (
                 <div
                   key={questao.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm"
+                  className="rounded-3xl border bg-white p-5 md:p-6"
                 >
-                  <div className="flex flex-col justify-between gap-4 md:flex-row">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2 py-1 rounded-md">Q{index + 1}</span>
-                        <h3 className="text-xl font-black text-slate-800">{questao.titulo}</h3>
-                      </div>
-                      <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl">{questao.enunciado}</p>
+                  <div className="flex flex-col justify-between gap-3 md:flex-row">
+                    <div>
+                      <h3 className="text-2xl font-black">{questao.titulo}</h3>
+                      <p className="mt-2 text-slate-700">{questao.enunciado}</p>
                     </div>
-                    <div className="rounded-2xl bg-slate-100 p-4 text-center md:w-32 flex flex-col justify-center">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor FGV</p>
-                      <p className="text-3xl font-black text-slate-800 mt-1">
+                    <div className="rounded-2xl bg-slate-100 p-3 text-center">
+                      <p className="text-xs font-bold text-slate-500">Valor</p>
+                      <p className="text-2xl font-black">
                         {questao.valor.toFixed(2)}
                       </p>
                     </div>
@@ -1051,34 +1038,33 @@ Advogado / OAB`);
                     onChange={(event) =>
                       alterarRespostaQuestao(questao.id, event.target.value)
                     }
-                    placeholder="Sua resposta brilhante vai aqui..."
-                    className="mt-5 h-40 w-full rounded-2xl border-2 border-slate-200 p-5 focus:border-emerald-500 focus:ring-0 transition"
+                    placeholder="Responda usando Fato + Fundamento + Conclusão..."
+                    className="mt-5 h-44 w-full rounded-2xl border p-4"
                   />
 
                   {correcao && (
-                    <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-5">
-                      <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-                        <p className="font-black text-slate-800">Resultado desta Questão</p>
-                        <p className="font-black text-lg text-emerald-600">
-                          {correcao.nota.toFixed(2)} <span className="text-sm text-slate-400">/ {correcao.notaMaxima.toFixed(2)}</span>
-                        </p>
-                      </div>
+                    <div className="mt-5 rounded-2xl bg-slate-100 p-4">
+                      <p className="font-black">
+                        Nota: {correcao.nota.toFixed(2)} /{" "}
+                        {correcao.notaMaxima.toFixed(2)}
+                      </p>
 
-                      <div className="space-y-3">
+                      <div className="mt-3 space-y-2">
                         {correcao.itens.map((item) => (
                           <div
                             key={item.titulo}
-                            className={`rounded-xl p-4 border ${
+                            className={`rounded-xl p-3 ${
                               item.atingiu
-                                ? "bg-emerald-50 border-emerald-100"
-                                : "bg-white border-slate-200"
+                                ? "bg-emerald-50 text-emerald-800"
+                                : "bg-red-50 text-red-800"
                             }`}
                           >
-                            <p className={`font-bold ${item.atingiu ? "text-emerald-800" : "text-slate-700"}`}>
-                              {item.atingiu ? "✅" : "⭕"} {item.titulo} <span className="text-slate-400 font-normal ml-1">({item.pontos.toFixed(2)} pts)</span>
+                            <p className="font-bold">
+                              {item.atingiu ? "✅" : "❌"} {item.titulo} —{" "}
+                              {item.pontos.toFixed(2)}
                             </p>
                             {!item.atingiu && (
-                              <p className="text-sm text-slate-500 mt-2 pl-6">{item.melhoria}</p>
+                              <p className="text-sm">{item.melhoria}</p>
                             )}
                           </div>
                         ))}
@@ -1089,91 +1075,99 @@ Advogado / OAB`);
               );
             })}
 
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={corrigirTodasAsQuestoes}
-                className="rounded-2xl bg-emerald-600 px-8 py-4 font-black text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 w-full md:w-auto"
-              >
-                Gabaritar Minhas Questões
-              </button>
-            </div>
+            <button
+              onClick={corrigirTodasAsQuestoes}
+              className="rounded-2xl bg-slate-950 px-6 py-3 font-black text-white hover:bg-slate-800"
+            >
+              Corrigir todas as questões (IA Local)
+            </button>
           </section>
         )}
 
         {aba === "correcao" && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 md:p-8 shadow-sm text-center">
-            <h2 className="text-3xl font-black text-slate-800">Seu Futuro como Advogado(a)</h2>
-            <p className="text-slate-500 mt-2 max-w-2xl mx-auto">Esta tela reflete o seu esforço. Se a nota já está alta, sinta orgulho. Se ainda falta um pouco, alegre-se: você descobriu exatamente o que consertar ANTES da prova real.</p>
+          <section className="rounded-3xl border bg-white p-5 md:p-6">
+            <h2 className="text-3xl font-black">Resultado final</h2>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-              <div className="rounded-3xl bg-slate-50 p-8 border border-slate-200">
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Peça</p>
-                <p className="text-5xl font-black text-slate-800 mt-2">
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-100 p-5 text-center">
+                <p className="text-sm font-bold text-slate-500">Peça</p>
+                <p className="text-4xl font-black">
                   {resultadoFinal.notaPeca.toFixed(2)}
                 </p>
+                <p>/5,00</p>
               </div>
 
-              <div className="rounded-3xl bg-slate-50 p-8 border border-slate-200">
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Questões</p>
-                <p className="text-5xl font-black text-slate-800 mt-2">
+              <div className="rounded-2xl bg-slate-100 p-5 text-center">
+                <p className="text-sm font-bold text-slate-500">Questões</p>
+                <p className="text-4xl font-black">
                   {resultadoFinal.notaQuestoes.toFixed(2)}
                 </p>
+                <p>/5,00</p>
               </div>
 
-              <div className="rounded-3xl bg-emerald-50 p-8 border border-emerald-200 shadow-inner">
-                <p className="text-sm font-bold text-emerald-600 uppercase tracking-widest">Sua Nota Final</p>
-                <p className={`text-6xl font-black mt-2 ${resultadoFinal.notaFinal >= 6 ? "text-emerald-600" : "text-slate-800"}`}>
+              <div className="rounded-2xl bg-slate-100 p-5 text-center">
+                <p className="text-sm font-bold text-slate-500">Final</p>
+                <p
+                  className={`text-4xl font-black ${classeNota(
+                    resultadoFinal.notaFinal
+                  )}`}
+                >
                   {resultadoFinal.notaFinal.toFixed(2)}
                 </p>
+                <p>/10,00</p>
               </div>
             </div>
 
-            <div className={`mt-10 rounded-3xl p-8 max-w-4xl mx-auto ${resultadoFinal.aprovado ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200' : 'bg-slate-800 text-white'}`}>
-              <p className="text-sm font-bold uppercase tracking-widest opacity-80">Seu Diagnóstico Mental</p>
-              <h3 className="mt-3 text-3xl font-black">
+            <div className="mt-6 rounded-2xl bg-slate-950 p-5 text-white">
+              <p className="text-sm text-slate-400">Diagnóstico</p>
+              <p
+                className={`mt-2 text-3xl font-black ${
+                  resultadoFinal.aprovado ? "text-emerald-400" : "text-red-400"
+                }`}
+              >
                 {resultadoFinal.aprovado
-                  ? "VOCÊ ESTÁ ABSOLUTAMENTE PRONTO(A)!"
-                  : "MUITO PERTO DA SUA VITÓRIA!"}
-              </h3>
-
-              <p className="mt-4 text-lg opacity-90 leading-relaxed max-w-2xl mx-auto">
-                {resultadoFinal.aprovado
-                  ? "A sua dedicação se transformou em resultado. Continue ancorando esse sentimento de certeza. Você tem o conhecimento, a técnica e a mentalidade."
-                  : "O fracasso não existe, apenas o feedback. O sistema te deu a direção exata do que precisa ser lapidado. Volte aos pontos não atingidos, reescreva-os e comprove que você está no comando do seu destino."}
+                  ? "APROVADO COM PADRÃO 8+"
+                  : "AINDA ABAIXO DA META 8,0"}
               </p>
+
+              {!resultadoFinal.aprovado && (
+                <p className="mt-3 text-slate-300">
+                  Refaça os itens não pontuados na peça e nas questões antes de
+                  avançar para o próximo simulado.
+                </p>
+              )}
             </div>
           </section>
         )}
 
         {aba === "revisao" && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 md:p-8 shadow-sm">
-            <h2 className="text-3xl font-black text-slate-800">Seu Mapa de Lapidação</h2>
-            <p className="mt-2 text-slate-600 text-lg">
-              De acordo com estudos de neurociência (Manual da Mente), a repetição estratégica é a mãe do aprendizado. Siga estes 3 passos para programar sua mente com a resposta correta:
+          <section className="rounded-3xl border bg-white p-5 md:p-6">
+            <h2 className="text-3xl font-black">Revisão obrigatória</h2>
+            <p className="mt-2 text-slate-600">
+              O app deve bloquear o avanço quando a nota final for menor que 8,0.
+              Use os pontos fracos como lista de revisão.
             </p>
 
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
-              <div className="rounded-3xl bg-blue-50 p-6 border border-blue-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black transform group-hover:scale-110 transition">1</div>
-                <h3 className="font-black text-xl text-blue-900">Mentalize a Estrutura</h3>
-                <p className="mt-3 text-blue-800 leading-relaxed">
-                  Não apenas leia, feche os olhos e visualize a folha de prova. Imagine-se escrevendo: Endereçamento, Cabimento, Preliminares, Mérito e Pedidos.
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-100 p-5">
+                <h3 className="font-black">1. Refazer estrutura</h3>
+                <p className="mt-2 text-sm">
+                  Endereçamento, partes, cabimento, competência, mérito, pedidos
+                  e fechamento.
                 </p>
               </div>
 
-              <div className="rounded-3xl bg-purple-50 p-6 border border-purple-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black transform group-hover:scale-110 transition">2</div>
-                <h3 className="font-black text-xl text-purple-900">Ancore a Lei Seca</h3>
-                <p className="mt-3 text-purple-800 leading-relaxed">
-                  Localize os artigos no seu Vade Mecum que você esqueceu de citar. Toque neles. A memória sinestésica ajuda a ancorar a informação para o dia D.
+              <div className="rounded-2xl bg-slate-100 p-5">
+                <h3 className="font-black">2. Lei seca</h3>
+                <p className="mt-2 text-sm">
+                  Reescrever os artigos e súmulas faltantes até memorizar.
                 </p>
               </div>
 
-              <div className="rounded-3xl bg-emerald-50 p-6 border border-emerald-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black transform group-hover:scale-110 transition">3</div>
-                <h3 className="font-black text-xl text-emerald-900">Aja com Certeza</h3>
-                <p className="mt-3 text-emerald-800 leading-relaxed">
-                  Reescreva apenas as teses que você errou. Quando terminar, repita em voz alta: "Eu entendi isso e estou um passo mais próximo da minha carteira".
+              <div className="rounded-2xl bg-slate-100 p-5">
+                <h3 className="font-black">3. Nova tentativa</h3>
+                <p className="mt-2 text-sm">
+                  Reenviar a peça corrigida até atingir nota mínima de segurança.
                 </p>
               </div>
             </div>
@@ -1181,36 +1175,35 @@ Advogado / OAB`);
         )}
 
         {aba === "banco" && (
-          <section className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                <span>📚</span> Arquivo Secreto: Peças FGV
-              </h2>
-              <div className="space-y-4">
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-white p-5 md:p-6">
+              <h2 className="text-3xl font-black">Banco de peças</h2>
+              <div className="mt-5 space-y-4">
                 {bancoPecas.map((peca) => (
-                  <div key={peca.id} className="rounded-2xl bg-white border border-slate-200 p-5 hover:border-emerald-400 transition-colors shadow-sm group">
-                    <div className="flex justify-between items-start">
-                      <p className="font-black text-lg text-slate-800 group-hover:text-emerald-700 transition-colors">{peca.nome}</p>
-                      <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded">5.0 pts</span>
-                    </div>
-                    <p className="mt-3 text-sm text-slate-600 leading-relaxed line-clamp-3">{peca.enunciado}</p>
+                  <div key={peca.id} className="rounded-2xl bg-slate-100 p-4">
+                    <p className="font-black">{peca.nome}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Valor: {peca.valor.toFixed(2)} pontos
+                    </p>
+                    <p className="mt-2 text-sm">{peca.enunciado}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div>
-              <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                <span>🎯</span> Arquivo Secreto: Questões
-              </h2>
-              <div className="space-y-4">
+            <div className="rounded-3xl border bg-white p-5 md:p-6">
+              <h2 className="text-3xl font-black">Banco de questões</h2>
+              <div className="mt-5 space-y-4">
                 {bancoQuestoes.map((questao) => (
-                  <div key={questao.id} className="rounded-2xl bg-white border border-slate-200 p-5 hover:border-blue-400 transition-colors shadow-sm group">
-                    <div className="flex justify-between items-start">
-                      <p className="font-black text-lg text-slate-800 group-hover:text-blue-700 transition-colors">{questao.titulo}</p>
-                      <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded">1.25 pts</span>
-                    </div>
-                    <p className="mt-3 text-sm text-slate-600 leading-relaxed line-clamp-3">{questao.enunciado}</p>
+                  <div
+                    key={questao.id}
+                    className="rounded-2xl bg-slate-100 p-4"
+                  >
+                    <p className="font-black">{questao.titulo}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Valor: {questao.valor.toFixed(2)} pontos
+                    </p>
+                    <p className="mt-2 text-sm">{questao.enunciado}</p>
                   </div>
                 ))}
               </div>
