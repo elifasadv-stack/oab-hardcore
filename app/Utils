@@ -1,0 +1,52 @@
+import { ItemEspelho, ResultadoItem, PecaFGV, CorrecaoPeca, QuestaoFGV, CorrecaoQuestao, ResultadoFinal } from "../data/tipos";
+
+export function normalizar(texto: string): string {
+  return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+export function contemAlgumaPalavra(texto: string, palavras: string[]): boolean {
+  const base = normalizar(texto);
+  return palavras.some((palavra) => base.includes(normalizar(palavra)));
+}
+
+export function corrigirItens(texto: string, espelho: ItemEspelho[]): ResultadoItem[] {
+  return espelho.map((item) => {
+    const atingiu = contemAlgumaPalavra(texto, item.palavrasChave);
+    return {
+      titulo: item.titulo,
+      pontos: atingiu ? item.pontos : 0,
+      atingiu,
+      feedbackErro: item.feedbackErro,
+      melhoria: item.melhoria,
+    };
+  });
+}
+
+export function corrigirPecaLocal(texto: string, peca: PecaFGV): CorrecaoPeca {
+  const itens = corrigirItens(texto, peca.espelho);
+  const nota = Number(Math.min(peca.valor, itens.reduce((total, item) => total + item.pontos, 0)).toFixed(2));
+  const pontosFortes = itens.filter((item) => item.atingiu).map((item) => item.titulo);
+  const pontosFracos = itens.filter((item) => !item.atingiu).map((item) => item.feedbackErro);
+  const planoMelhoria = itens.filter((item) => !item.atingiu).map((item) => item.melhoria);
+
+  return { peca: peca.nome, nota, notaMaxima: peca.valor, itens, pontosFortes, pontosFracos, planoMelhoria };
+}
+
+export function corrigirQuestaoLocal(texto: string, questao: QuestaoFGV): CorrecaoQuestao {
+  const itens = corrigirItens(texto, questao.espelho);
+  const nota = Number(Math.min(questao.valor, itens.reduce((total, item) => total + item.pontos, 0)).toFixed(2));
+  return { id: questao.id, titulo: questao.titulo, nota, notaMaxima: questao.valor, itens };
+}
+
+export function calcularResultadoFinal(notaPeca: number, notasQuestoes: CorrecaoQuestao[]): ResultadoFinal {
+  const totalQuestoes = notasQuestoes.reduce((total, questao) => total + questao.nota, 0);
+  const notaQuestoes = Number(Math.min(5, totalQuestoes).toFixed(2));
+  const notaFinal = Number(Math.min(10, notaPeca + notaQuestoes).toFixed(2));
+  return { notaPeca: Number(Math.min(5, notaPeca).toFixed(2)), notaQuestoes, notaFinal, aprovado: notaFinal >= 8 };
+}
+
+export function classeNota(nota: number): string {
+  if (nota >= 8) return "text-emerald-400 font-black";
+  if (nota >= 6) return "text-amber-400 font-black";
+  return "text-slate-300 font-bold";
+}
